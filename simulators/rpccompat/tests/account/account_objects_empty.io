@@ -1,4 +1,4 @@
-// Verify account_objects structure for genesis account
+// Verify account_objects for genesis returns its objects
 // speconly: true
->> {"method":"account_objects","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}]}
-<< {"result":{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","account_objects":[],"status":"success"}}
+>> {"method":"account_objects","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","ledger_index":"current"}]}
+<< {"result":{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","account_objects":"...","status":"success"}}

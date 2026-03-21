@@ -1,4 +1,4 @@
-// Verify request without method field returns error
+// Verify request with missing params array returns error
 // speconly: true
->> {"method":"","params":[{}]}
+>> {"method":"account_info"}
 << {"result":{"status":"error"}}
