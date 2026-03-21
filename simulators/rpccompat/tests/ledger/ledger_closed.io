@@ -1,5 +1,4 @@
-// Verify ledger_closed response structure
-// Note: standalone nodes without peers return noNetwork
+// Verify ledger_closed returns the most recent closed ledger
 // speconly: true
 >> {"method":"ledger_closed","params":[{}]}
-<< {"result":{"status":"..."}}
+<< {"result":{"ledger_hash":"...","ledger_index":"...","status":"success"}}

@@ -1,5 +1,4 @@
-// Verify ledger_current returns current ledger index
-// Note: standalone nodes without peers may return noNetwork
+// Verify ledger_current returns a ledger index
 // speconly: true
 >> {"method":"ledger_current","params":[{}]}
-<< {"result":{"status":"..."}}
+<< {"result":{"ledger_current_index":"...","status":"success"}}

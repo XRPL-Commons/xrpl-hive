@@ -112,4 +112,10 @@ echo "=== validators ==="
 cat $VALIDATORS
 echo "==================="
 
-exec rippled --conf $CONFIG
+# Standalone mode: -a flag makes rippled work without peers.
+# In this mode, ledger_accept can be used to advance ledgers.
+if [ "${XRPL_STANDALONE:-0}" = "1" ]; then
+    exec rippled --conf $CONFIG -a
+else
+    exec rippled --conf $CONFIG
+fi
