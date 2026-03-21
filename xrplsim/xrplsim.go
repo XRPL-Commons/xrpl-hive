@@ -1,0 +1,381 @@
+package xrplsim
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net"
+	"net/http"
+	"os"
+	"path/filepath"
+	"slices"
+	"strconv"
+
+	"github.com/xrpl-commons/xrpl-hive/internal/simapi"
+)
+
+// Simulation wraps the simulation HTTP API provided by xrpl-hive.
+type Simulation struct {
+	url string
+	m   testMatcher
+	ll  int
+}
+
+// New looks up the hive host URI using the HIVE_SIMULATOR environment variable
+// and connects to it. It will panic if HIVE_SIMULATOR is not set.
+func New() *Simulation {
+	url, isSet := os.LookupEnv("HIVE_SIMULATOR")
+	if !isSet {
+		panic("HIVE_SIMULATOR environment variable not set")
+	}
+	if url == "" {
+		panic("HIVE_SIMULATOR environment variable is empty")
+	}
+	sim := &Simulation{url: url}
+	if p := os.Getenv("HIVE_TEST_PATTERN"); p != "" {
+		m, err := parseTestPattern(p)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Warning: ignoring invalid test pattern regexp: "+err.Error())
+		}
+		sim.m = m
+	}
+	if ll := os.Getenv("HIVE_LOGLEVEL"); ll != "" {
+		sim.ll, _ = strconv.Atoi(ll)
+	}
+	return sim
+}
+
+// NewAt creates a simulation connected to the given API endpoint.
+func NewAt(url string) *Simulation {
+	return &Simulation{url: url}
+}
+
+// SetTestPattern sets the regular expression that enables/skips suites and test cases.
+func (sim *Simulation) SetTestPattern(p string) {
+	m, err := parseTestPattern(p)
+	if err != nil {
+		panic("invalid test pattern regexp: " + err.Error())
+	}
+	sim.m = m
+}
+
+// TestPattern returns the regular expressions used to enable/skip suite and test names.
+func (sim *Simulation) TestPattern() (suiteExpr string, testNameExpr string) {
+	se := ""
+	if sim.m.suite != nil {
+		se = sim.m.suite.String()
+	}
+	te := ""
+	if sim.m.test != nil {
+		te = sim.m.test.String()
+	}
+	return se, te
+}
+
+// EndTest finishes the test case.
+func (sim *Simulation) EndTest(testSuite SuiteID, test TestID, testResult TestResult) error {
+	url := fmt.Sprintf("%s/testsuite/%d/test/%d", sim.url, testSuite, test)
+	return post(url, &testResult, nil)
+}
+
+// StartSuite signals the start of a test suite.
+func (sim *Simulation) StartSuite(suite *simapi.TestRequest, simlog string) (SuiteID, error) {
+	var (
+		url  = fmt.Sprintf("%s/testsuite", sim.url)
+		req  = suite
+		resp SuiteID
+	)
+	err := post(url, req, &resp)
+	return resp, err
+}
+
+// EndSuite signals the end of a test suite.
+func (sim *Simulation) EndSuite(testSuite SuiteID) error {
+	url := fmt.Sprintf("%s/testsuite/%d", sim.url, testSuite)
+	return requestDelete(url)
+}
+
+// StartTest starts a new test case, returning the testcase id as a context identifier.
+func (sim *Simulation) StartTest(testSuite SuiteID, test TestStartInfo) (TestID, error) {
+	var (
+		url  = fmt.Sprintf("%s/testsuite/%d/test", sim.url, testSuite)
+		req  = test
+		resp TestID
+	)
+	err := post(url, req, &resp)
+	return resp, err
+}
+
+// ClientTypes returns all client types available to this simulator run.
+func (sim *Simulation) ClientTypes() ([]*ClientDefinition, error) {
+	var (
+		url  = fmt.Sprintf("%s/clients", sim.url)
+		resp []*ClientDefinition
+	)
+	err := get(url, &resp)
+	resp = slices.DeleteFunc(resp, func(cd *ClientDefinition) bool { return cd == nil })
+	return resp, err
+}
+
+// ClientsWithRole returns the clients which are tagged with the given role.
+func (sim *Simulation) ClientsWithRole(role string) ([]*ClientDefinition, error) {
+	cs, err := sim.ClientTypes()
+	if err != nil {
+		return nil, err
+	}
+	var filtered []*ClientDefinition
+	for _, c := range cs {
+		if c.HasRole(role) {
+			filtered = append(filtered, c)
+		}
+	}
+	return filtered, nil
+}
+
+// StartClient starts a new node with the specified parameters.
+func (sim *Simulation) StartClient(testSuite SuiteID, test TestID, parameters map[string]string, initFiles map[string]string) (string, net.IP, error) {
+	clientType, ok := parameters["CLIENT"]
+	if !ok {
+		return "", nil, errors.New("missing 'CLIENT' parameter")
+	}
+	return sim.StartClientWithOptions(testSuite, test, clientType, Params(parameters), WithStaticFiles(initFiles))
+}
+
+// StartClientWithOptions starts a new node with specified options. Returns container id and ip.
+func (sim *Simulation) StartClientWithOptions(testSuite SuiteID, test TestID, clientType string, options ...StartOption) (string, net.IP, error) {
+	var (
+		url  = fmt.Sprintf("%s/testsuite/%d/test/%d/node", sim.url, testSuite, test)
+		resp simapi.StartNodeResponse
+	)
+
+	setup := &clientSetup{
+		files: make(map[string]func() (io.ReadCloser, error)),
+		config: simapi.NodeConfig{
+			Client:      clientType,
+			Environment: make(map[string]string),
+		},
+	}
+	for _, opt := range options {
+		opt.apply(setup)
+	}
+
+	err := setup.postWithFiles(url, &resp)
+	if err != nil {
+		return "", nil, err
+	}
+	ip := net.ParseIP(resp.IP)
+	if ip == nil {
+		return resp.ID, nil, fmt.Errorf("no IP address returned")
+	}
+	return resp.ID, ip, nil
+}
+
+// StopClient signals to the host that the node is no longer required.
+func (sim *Simulation) StopClient(testSuite SuiteID, test TestID, nodeid string) error {
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/testsuite/%d/test/%d/node/%s", sim.url, testSuite, test, nodeid), nil)
+	if err != nil {
+		return err
+	}
+	_, err = http.DefaultClient.Do(req)
+	return err
+}
+
+// PauseClient pauses a client container.
+func (sim *Simulation) PauseClient(testSuite SuiteID, test TestID, nodeid string) error {
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/testsuite/%d/test/%d/node/%s/pause", sim.url, testSuite, test, nodeid), nil)
+	if err != nil {
+		return err
+	}
+	_, err = http.DefaultClient.Do(req)
+	return err
+}
+
+// UnpauseClient unpauses a client container.
+func (sim *Simulation) UnpauseClient(testSuite SuiteID, test TestID, nodeid string) error {
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/testsuite/%d/test/%d/node/%s/pause", sim.url, testSuite, test, nodeid), nil)
+	if err != nil {
+		return err
+	}
+	_, err = http.DefaultClient.Do(req)
+	return err
+}
+
+// ClientExec runs a command in a running client.
+func (sim *Simulation) ClientExec(testSuite SuiteID, test TestID, nodeid string, cmd []string) (*ExecInfo, error) {
+	var (
+		url  = fmt.Sprintf("%s/testsuite/%d/test/%d/node/%s/exec", sim.url, testSuite, test, nodeid)
+		req  = &simapi.ExecRequest{Command: cmd}
+		resp *ExecInfo
+	)
+	err := post(url, req, &resp)
+	return resp, err
+}
+
+// CreateNetwork creates a docker network.
+func (sim *Simulation) CreateNetwork(testSuite SuiteID, networkName string) error {
+	url := fmt.Sprintf("%s/testsuite/%d/network/%s", sim.url, testSuite, networkName)
+	return post(url, nil, nil)
+}
+
+// RemoveNetwork removes a docker network.
+func (sim *Simulation) RemoveNetwork(testSuite SuiteID, network string) error {
+	url := fmt.Sprintf("%s/testsuite/%d/network/%s", sim.url, testSuite, network)
+	return requestDelete(url)
+}
+
+// ConnectContainer connects a container to a network.
+func (sim *Simulation) ConnectContainer(testSuite SuiteID, network, containerID string) error {
+	url := fmt.Sprintf("%s/testsuite/%d/network/%s/%s", sim.url, testSuite, network, containerID)
+	return post(url, nil, nil)
+}
+
+// DisconnectContainer disconnects a container from a network.
+func (sim *Simulation) DisconnectContainer(testSuite SuiteID, network, containerID string) error {
+	url := fmt.Sprintf("%s/testsuite/%d/network/%s/%s", sim.url, testSuite, network, containerID)
+	return requestDelete(url)
+}
+
+// ContainerNetworkIP returns the IP address of a container on the given network.
+func (sim *Simulation) ContainerNetworkIP(testSuite SuiteID, network, containerID string) (string, error) {
+	var (
+		url  = fmt.Sprintf("%s/testsuite/%d/network/%s/%s", sim.url, testSuite, network, containerID)
+		resp string
+	)
+	err := get(url, &resp)
+	return resp, err
+}
+
+func (setup *clientSetup) postWithFiles(url string, result interface{}) error {
+	var (
+		pipeR, pipeW = io.Pipe()
+		bufW         = bufio.NewWriter(pipeW)
+		pipeErrCh    = make(chan error, 1)
+		form         = multipart.NewWriter(bufW)
+	)
+
+	go func() (err error) {
+		defer func() { pipeErrCh <- err }()
+		defer pipeW.Close()
+
+		fw, err := form.CreateFormField("config")
+		if err != nil {
+			return err
+		}
+		if err := json.NewEncoder(fw).Encode(&setup.config); err != nil {
+			return err
+		}
+
+		for filename, open := range setup.files {
+			fw, err := form.CreateFormFile(filename, filepath.Base(filename))
+			if err != nil {
+				return err
+			}
+			fileReader, err := open()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: upload error for %s: %v\n", filename, err)
+				return err
+			}
+			_, copyErr := io.Copy(fw, fileReader)
+			fileReader.Close()
+			if copyErr != nil {
+				return copyErr
+			}
+		}
+
+		if err := form.Close(); err != nil {
+			return err
+		}
+		return bufW.Flush()
+	}()
+
+	req, err := http.NewRequest("POST", url, pipeR)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("content-type", form.FormDataContentType())
+	httpErr := request(req, result)
+
+	uploadErr := <-pipeErrCh
+	if httpErr == nil && uploadErr != nil {
+		return uploadErr
+	}
+	return httpErr
+}
+
+func get(url string, result interface{}) error {
+	httpReq, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(fmt.Errorf("can't create HTTP request: %v", err))
+	}
+	return request(httpReq, result)
+}
+
+func requestDelete(url string) error {
+	httpReq, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		panic(fmt.Errorf("can't create HTTP request: %v", err))
+	}
+	return request(httpReq, nil)
+}
+
+func post(url string, requestObj interface{}, result interface{}) error {
+	var reqBody []byte
+	if requestObj != nil {
+		var err error
+		if reqBody, err = json.Marshal(requestObj); err != nil {
+			panic(fmt.Errorf("error encoding request body: %v", err))
+		}
+	}
+
+	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
+	if err != nil {
+		panic(fmt.Errorf("can't create HTTP request: %v", err))
+	}
+	if len(reqBody) > 0 {
+		httpReq.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(reqBody)), nil
+		}
+		httpReq.Header.Set("content-type", "application/json")
+	}
+	return request(httpReq, result)
+}
+
+func request(httpReq *http.Request, result interface{}) error {
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	dec := json.NewDecoder(resp.Body)
+
+	switch {
+	case resp.StatusCode >= 400:
+		switch resp.Header.Get("content-type") {
+		case "application/json":
+			var errobj simapi.Error
+			if err := dec.Decode(&errobj); err != nil {
+				return fmt.Errorf("request failed (status %d) and can't decode error message: %v", resp.StatusCode, err)
+			}
+			return errors.New(errobj.Error)
+		default:
+			respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+			if len(respBody) == 0 {
+				return fmt.Errorf("request failed (status %d)", resp.StatusCode)
+			}
+			return fmt.Errorf("request failed (status %d): %s", resp.StatusCode, respBody)
+		}
+	case resp.StatusCode >= 200 && resp.StatusCode < 300:
+		if result != nil {
+			if err := dec.Decode(result); err != nil {
+				return fmt.Errorf("invalid response (status %d): %v", resp.StatusCode, err)
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("invalid response status code %d", resp.StatusCode)
+	}
+}
