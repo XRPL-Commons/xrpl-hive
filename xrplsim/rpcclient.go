@@ -41,6 +41,22 @@ type rpcResponse struct {
 	Result json.RawMessage `json:"result"`
 }
 
+// CallRaw sends a raw JSON-RPC request and returns the raw JSON response.
+// This is used by the iotest runner to send arbitrary requests.
+func (c *RPCClient) CallRaw(requestJSON []byte) ([]byte, error) {
+	resp, err := c.client.Post(c.endpoint, "application/json", bytes.NewReader(requestJSON))
+	if err != nil {
+		return nil, fmt.Errorf("http post to %s: %w", c.endpoint, err)
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+	return data, nil
+}
+
 // Call invokes an RPC method and returns the raw result.
 func (c *RPCClient) Call(method string, params interface{}) (json.RawMessage, error) {
 	p := []interface{}{}
