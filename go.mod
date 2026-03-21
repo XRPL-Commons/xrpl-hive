@@ -3,10 +3,12 @@ module github.com/xrpl-commons/xrpl-hive
 go 1.24.0
 
 require (
+	github.com/evanw/esbuild v0.27.4
 	github.com/fsouza/go-dockerclient v1.12.2
 	github.com/gorilla/mux v1.8.1
 	github.com/lmittmann/tint v1.0.5
 	github.com/xrpl-commons/xrpl-hive/hiveproxy v0.0.0
+	golang.org/x/net v0.24.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

@@ -1,10 +1,10 @@
 ARG baseimage=rippleci/rippled
 ARG tag=develop
 
-FROM $baseimage:$tag
+FROM --platform=linux/amd64 $baseimage:$tag
 
-# Install python3 for validators.json conversion.
-RUN apt-get update && apt-get install -y python3 && rm -rf /var/lib/apt/lists/*
+# Install python3 for validators.json conversion (RHEL-based image).
+RUN dnf install -y python3 && dnf clean all || true
 
 # Write version.
 RUN rippled --version > /version.txt 2>&1 || echo "rippled-unknown" > /version.txt

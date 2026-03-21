@@ -77,9 +77,10 @@ func (c *RPCClient) Call(method string, params interface{}) (json.RawMessage, er
 
 // ServerInfoResult holds relevant fields from the server_info RPC response.
 type ServerInfoResult struct {
-	ServerState string `json:"server_state"`
-	Peers       int    `json:"peers"`
-	Validated   struct {
+	ServerState  string `json:"server_state"`
+	BuildVersion string `json:"build_version"`
+	Peers        int    `json:"peers"`
+	Validated    struct {
 		Seq  int    `json:"seq"`
 		Hash string `json:"hash"`
 	}
@@ -95,6 +96,7 @@ func (c *RPCClient) ServerInfo() (*ServerInfoResult, error) {
 	var wrapper struct {
 		Info struct {
 			ServerState     string `json:"server_state"`
+			BuildVersion    string `json:"build_version"`
 			Peers           int    `json:"peers"`
 			ValidatedLedger struct {
 				Seq  int    `json:"seq"`
@@ -107,8 +109,9 @@ func (c *RPCClient) ServerInfo() (*ServerInfoResult, error) {
 	}
 
 	return &ServerInfoResult{
-		ServerState: wrapper.Info.ServerState,
-		Peers:       wrapper.Info.Peers,
+		ServerState:  wrapper.Info.ServerState,
+		BuildVersion: wrapper.Info.BuildVersion,
+		Peers:        wrapper.Info.Peers,
 		Validated: struct {
 			Seq  int    `json:"seq"`
 			Hash string `json:"hash"`

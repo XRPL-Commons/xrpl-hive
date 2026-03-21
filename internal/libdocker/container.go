@@ -174,6 +174,16 @@ func (b *ContainerBackend) StartContainer(ctx context.Context, containerID strin
 	}
 	info.IP = container.NetworkSettings.IPAddress
 	info.MAC = container.NetworkSettings.MacAddress
+	// On Docker Desktop (macOS/Windows), IPAddress may be empty.
+	// Fall back to the bridge network IP.
+	if info.IP == "" {
+		for _, net := range container.NetworkSettings.Networks {
+			if net.IPAddress != "" {
+				info.IP = net.IPAddress
+				break
+			}
+		}
+	}
 
 	// Set up the port check if requested.
 	hasStarted := make(chan struct{})
