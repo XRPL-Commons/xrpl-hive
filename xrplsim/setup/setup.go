@@ -83,17 +83,63 @@ func SetupOffer(ctx context.Context, rpc *xrplsim.RPCClient, account, secret str
 	return WaitSettled(ctx, rpc, 3)
 }
 
-// WaitSettled waits for ledgersAhead ledgers to close, ensuring pending transactions settle.
-func WaitSettled(ctx context.Context, rpc *xrplsim.RPCClient, ledgersAhead int) error {
-	info, err := rpc.ServerInfo()
+// SetupPaymentChannel creates a payment channel from the source to the destination.
+// Returns the channel creation tx hash.
+func SetupPaymentChannel(ctx context.Context, rpc *xrplsim.RPCClient, sourceAddr, sourceSecret, destAddr, amount string, settleDelay int) (string, error) {
+	result, err := rpc.Submit(sourceSecret, sourceAddr, map[string]interface{}{
+		"TransactionType": "PaymentChannelCreate",
+		"Destination":     destAddr,
+		"Amount":          amount,
+		"SettleDelay":     settleDelay,
+		"PublicKey":       "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+	})
 	if err != nil {
-		// If we can't get server_info, just wait a bit.
-		time.Sleep(5 * time.Second)
-		return nil
+		return "", fmt.Errorf("payment channel create: %w", err)
 	}
-	targetSeq := info.Validated.Seq + ledgersAhead
-	if targetSeq < 3 {
-		targetSeq = 3
+	if result.EngineResult != "tesSUCCESS" {
+		return "", fmt.Errorf("payment channel create: %s", result.EngineResult)
 	}
-	return rpc.WaitForLedger(ctx, targetSeq, 60*time.Second)
+	if err := WaitSettled(ctx, rpc, 3); err != nil {
+		return "", err
+	}
+	return result.TxHash, nil
+}
+
+// SetupIOU creates a trust line and sends an IOU payment from issuer to holder.
+func SetupIOU(ctx context.Context, rpc *xrplsim.RPCClient, issuerAddr, issuerSecret, holderAddr, holderSecret, currency, amount string) error {
+	// Holder trusts issuer.
+	if err := SetupTrustLine(ctx, rpc, holderAddr, holderSecret, currency, issuerAddr, amount); err != nil {
+		return fmt.Errorf("setup trust line: %w", err)
+	}
+	// Issuer sends IOU to holder.
+	result, err := rpc.Submit(issuerSecret, issuerAddr, map[string]interface{}{
+		"TransactionType": "Payment",
+		"Destination":     holderAddr,
+		"Amount": map[string]interface{}{
+			"currency": currency,
+			"issuer":   issuerAddr,
+			"value":    amount,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("iou payment: %w", err)
+	}
+	if result.EngineResult != "tesSUCCESS" {
+		return fmt.Errorf("iou payment: %s", result.EngineResult)
+	}
+	return WaitSettled(ctx, rpc, 3)
+}
+
+// WaitSettled advances the ledger by calling ledger_accept, ensuring
+// pending transactions are applied. This works in standalone mode where
+// ledgers must be closed manually.
+func WaitSettled(ctx context.Context, rpc *xrplsim.RPCClient, ledgersAhead int) error {
+	for i := 0; i < ledgersAhead; i++ {
+		_, err := rpc.Call("ledger_accept", nil)
+		if err != nil {
+			return fmt.Errorf("ledger_accept: %w", err)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return nil
 }

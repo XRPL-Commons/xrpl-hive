@@ -45,6 +45,13 @@ func compareValue(path string, expected, actual interface{}, specOnly bool, errs
 		if exp == "..." {
 			return // Wildcard — matches anything.
 		}
+		if exp == "!null" {
+			// Assert field is present and not null.
+			if actual == nil {
+				*errs = append(*errs, fmt.Sprintf("%s: expected non-null value, got null", pathOrRoot(path)))
+			}
+			return
+		}
 		if specOnly {
 			if _, ok := actual.(string); !ok {
 				*errs = append(*errs, fmt.Sprintf("%s: expected string, got %T", pathOrRoot(path), actual))

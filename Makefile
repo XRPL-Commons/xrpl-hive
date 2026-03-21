@@ -1,4 +1,4 @@
-.PHONY: build test clean smoke full
+.PHONY: build test clean smoke full rpccompat rpccompat-stateful sync txcompat wscompat
 
 build:
 	go build -o ./bin/xrpl-hive .
@@ -25,6 +25,26 @@ consensus: build
 # Run soak tests
 soak: build
 	./bin/xrpl-hive --sim soak --client rippled,goxrpl --sim.timelimit 10m
+
+# Run RPC compatibility tests
+rpccompat: build
+	./bin/xrpl-hive --sim rpccompat --client rippled,goxrpl
+
+# Run stateful RPC compatibility tests
+rpccompat-stateful: build
+	./bin/xrpl-hive --sim rpccompat-stateful --client rippled,goxrpl
+
+# Run sync tests
+sync: build
+	./bin/xrpl-hive --sim sync --client rippled,goxrpl
+
+# Run transaction compatibility tests
+txcompat: build
+	./bin/xrpl-hive --sim txcompat --client rippled,goxrpl
+
+# Run WebSocket compatibility tests
+wscompat: build
+	./bin/xrpl-hive --sim wscompat --client rippled,goxrpl
 
 # Dev mode — start API only, no simulators
 dev: build

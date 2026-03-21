@@ -83,6 +83,11 @@ if [ "${XRPL_PEER_PRIVATE:-1}" = "1" ]; then
     echo -e "\n[peer_private]\n1" >> $CONFIG
 fi
 
+# Validation quorum (for single-validator networks).
+if [ -n "$XRPL_VALIDATION_QUORUM" ]; then
+    echo -e "\n[validation_quorum]\n$XRPL_VALIDATION_QUORUM" >> $CONFIG
+fi
+
 # Log level mapping: 0-5 -> rippled severity.
 case "${XRPL_LOGLEVEL:-3}" in
     0|1) SEVERITY="fatal" ;;

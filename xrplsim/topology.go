@@ -99,6 +99,12 @@ func (t *Topology) EnvForNode(index int, peerAddrs []string) Params {
 		p["XRPL_BOOTNODE"] = strings.Join(peerAddrs, ",")
 	}
 
+	// For single-validator networks, set quorum to 1 so the node
+	// can validate ledgers by itself.
+	if len(t.Validators) == 1 {
+		p["XRPL_VALIDATION_QUORUM"] = "1"
+	}
+
 	return p
 }
 

@@ -6,6 +6,7 @@ require (
 	github.com/evanw/esbuild v0.27.4
 	github.com/fsouza/go-dockerclient v1.12.2
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.0
 	github.com/lmittmann/tint v1.0.5
 	github.com/xrpl-commons/xrpl-hive/hiveproxy v0.0.0
 	golang.org/x/net v0.24.0
@@ -23,7 +24,6 @@ require (
 	github.com/ethereum/go-ethereum v1.14.5 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
