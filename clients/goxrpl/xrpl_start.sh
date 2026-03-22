@@ -60,13 +60,13 @@ ports = ["port_rpc_admin_local", "port_ws_admin_local", "port_peer"]
 [port_rpc_admin_local]
 port = ${XRPL_RPC_PORT:-5005}
 ip = "0.0.0.0"
-admin = ["0.0.0.0"]
+admin = ["0.0.0.0/0"]
 protocol = "http"
 
 [port_ws_admin_local]
 port = ${XRPL_WS_PORT:-6006}
 ip = "0.0.0.0"
-admin = ["0.0.0.0"]
+admin = ["0.0.0.0/0"]
 protocol = "ws"
 send_queue_limit = 500
 
@@ -140,4 +140,8 @@ echo "=== validators ==="
 cat $VALIDATORS
 echo "==================="
 
-exec goxrpl server --conf $CONFIG
+if [ "${XRPL_STANDALONE:-0}" = "1" ]; then
+    exec goxrpl server --conf $CONFIG -a
+else
+    exec goxrpl server --conf $CONFIG
+fi
