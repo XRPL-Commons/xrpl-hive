@@ -32,6 +32,10 @@ func main() {
 				t.Fatal("failed to create network:", err)
 			}
 
+			// Set quorum to numInitial so the initial network can advance
+			// before the late joiner is online.
+			quorum := fmt.Sprintf("%d", numInitial)
+
 			// Start initial nodes.
 			var nodes []*xrplsim.Client
 			var peerAddrs []string
@@ -40,6 +44,7 @@ func main() {
 				c := t.StartClient(cd.Name,
 					xrplsim.WithValidatorConfig(topo, i, peerAddrs),
 					xrplsim.WithInitialNetworks([]string{"sync-net"}),
+					xrplsim.Params{"XRPL_VALIDATION_QUORUM": quorum},
 				)
 				ip, _ := t.Sim.ContainerNetworkIP(t.SuiteID, "sync-net", c.Container)
 				peerAddrs = append(peerAddrs, fmt.Sprintf("%s:%d", ip, xrplsim.DefaultPeerPort))
@@ -86,6 +91,7 @@ func main() {
 			lateNode := t.StartClient(lateClient.Name,
 				xrplsim.WithValidatorConfig(topo, numInitial, peerAddrs),
 				xrplsim.WithInitialNetworks([]string{"sync-net"}),
+				xrplsim.Params{"XRPL_VALIDATION_QUORUM": quorum},
 			)
 
 			// Connect late joiner to all existing nodes.
