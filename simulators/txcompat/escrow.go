@@ -17,9 +17,11 @@ func escrowCreateAndFinish() xrplsim.TestSpec {
 			src := accounts[0]
 			dest := accounts[1]
 
-			// FinishAfter 10s in the future (must not already be past at creation time).
+			// Capture src sequence before create (needed for OfferSequence in finish).
+			srcInfo, _ := rpc.AccountInfo(src.Address)
+			createSeq := srcInfo.Sequence
+
 			finishAfter := rippleEpoch(30)
-			// CancelAfter far in the future.
 			cancelAfter := rippleEpoch(86400)
 
 			result, err := rpc.Submit(src.Secret, src.Address, map[string]interface{}{
@@ -39,30 +41,11 @@ func escrowCreateAndFinish() xrplsim.TestSpec {
 				rpc.Call("ledger_accept", nil)
 			}
 
-			// Find escrow sequence from account_objects.
-			raw, err := rpc.Call("account_objects", map[string]interface{}{
-				"account":      src.Address,
-				"type":         "escrow",
-				"ledger_index": "current",
-			})
-			if err != nil {
-				t.Fatal("account_objects:", err)
-			}
-			var objResp struct {
-				AccountObjects []struct {
-					Sequence int `json:"Sequence"`
-				} `json:"account_objects"`
-			}
-			json.Unmarshal(raw, &objResp)
-			if len(objResp.AccountObjects) == 0 {
-				t.Fatal("no escrow object found")
-			}
-
-			// Finish the escrow (anyone can finish after FinishAfter).
+			// Finish the escrow using the sequence captured before create.
 			finishResult, err := rpc.Submit(dest.Secret, dest.Address, map[string]interface{}{
 				"TransactionType": "EscrowFinish",
 				"Owner":           src.Address,
-				"OfferSequence":   objResp.AccountObjects[0].Sequence,
+				"OfferSequence":   createSeq,
 			})
 			if err != nil {
 				t.Fatal("escrow finish:", err)

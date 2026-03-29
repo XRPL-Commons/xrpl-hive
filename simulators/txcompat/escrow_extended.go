@@ -22,7 +22,11 @@ func escrowLockup() xrplsim.TestSpec {
 			accounts := mustFund(t, rpc, 2)
 			src, dest := accounts[0], accounts[1]
 
-			finishAfter := rippleEpoch(30) // 10 seconds from now
+			// Capture src sequence before EscrowCreate (this IS the OfferSequence for finish).
+			srcInfo, _ := rpc.AccountInfo(src.Address)
+			createSeq := srcInfo.Sequence
+
+			finishAfter := rippleEpoch(30)
 			cancelAfter := rippleEpoch(3600)
 
 			result, err := rpc.Submit(src.Secret, src.Address, map[string]interface{}{
@@ -42,17 +46,14 @@ func escrowLockup() xrplsim.TestSpec {
 				rpc.Call("ledger_accept", nil)
 			}
 
-			// Get escrow object.
-			seq := getEscrowSeq(t, rpc, src.Address)
-
 			// Get dest balance before.
 			infoBefore, _ := rpc.AccountInfo(dest.Address)
 
-			// Finish.
+			// Finish using the sequence captured before create.
 			finishResult, err := rpc.Submit(dest.Secret, dest.Address, map[string]interface{}{
 				"TransactionType": "EscrowFinish",
 				"Owner":           src.Address,
-				"OfferSequence":   seq,
+				"OfferSequence":   createSeq,
 			})
 			if err != nil {
 				t.Fatal("escrow finish:", err)
@@ -76,6 +77,9 @@ func escrowFinishOnly() xrplsim.TestSpec {
 			accounts := mustFund(t, rpc, 2)
 			src, dest := accounts[0], accounts[1]
 
+			srcInfo, _ := rpc.AccountInfo(src.Address)
+			createSeq := srcInfo.Sequence
+
 			result, err := rpc.Submit(src.Secret, src.Address, map[string]interface{}{
 				"TransactionType": "EscrowCreate",
 				"Destination":     dest.Address,
@@ -91,12 +95,10 @@ func escrowFinishOnly() xrplsim.TestSpec {
 				rpc.Call("ledger_accept", nil)
 			}
 
-			seq := getEscrowSeq(t, rpc, src.Address)
-
 			finishResult, err := rpc.Submit(dest.Secret, dest.Address, map[string]interface{}{
 				"TransactionType": "EscrowFinish",
 				"Owner":           src.Address,
-				"OfferSequence":   seq,
+				"OfferSequence":   createSeq,
 			})
 			if err != nil {
 				t.Fatal("escrow finish:", err)
@@ -211,6 +213,9 @@ func escrowMetadataToSelf() xrplsim.TestSpec {
 			accounts := mustFund(t, rpc, 1)
 			alice := accounts[0]
 
+			aliceInfo, _ := rpc.AccountInfo(alice.Address)
+			createSeq := aliceInfo.Sequence
+
 			result, err := rpc.Submit(alice.Secret, alice.Address, map[string]interface{}{
 				"TransactionType": "EscrowCreate",
 				"Destination":     alice.Address, // self
@@ -227,12 +232,10 @@ func escrowMetadataToSelf() xrplsim.TestSpec {
 				rpc.Call("ledger_accept", nil)
 			}
 
-			seq := getEscrowSeq(t, rpc, alice.Address)
-
 			finishResult, err := rpc.Submit(alice.Secret, alice.Address, map[string]interface{}{
 				"TransactionType": "EscrowFinish",
 				"Owner":           alice.Address,
-				"OfferSequence":   seq,
+				"OfferSequence":   createSeq,
 			})
 			if err != nil {
 				t.Fatal("escrow finish:", err)
@@ -253,6 +256,8 @@ func escrowMetadataToOther() xrplsim.TestSpec {
 			src, dest := accounts[0], accounts[1]
 
 			balBefore, _ := rpc.AccountInfo(dest.Address)
+			srcInfo, _ := rpc.AccountInfo(src.Address)
+			createSeq := srcInfo.Sequence
 
 			result, err := rpc.Submit(src.Secret, src.Address, map[string]interface{}{
 				"TransactionType": "EscrowCreate",
@@ -270,12 +275,10 @@ func escrowMetadataToOther() xrplsim.TestSpec {
 				rpc.Call("ledger_accept", nil)
 			}
 
-			seq := getEscrowSeq(t, rpc, src.Address)
-
 			finishResult, err := rpc.Submit(dest.Secret, dest.Address, map[string]interface{}{
 				"TransactionType": "EscrowFinish",
 				"Owner":           src.Address,
-				"OfferSequence":   seq,
+				"OfferSequence":   createSeq,
 			})
 			if err != nil {
 				t.Fatal("escrow finish:", err)
