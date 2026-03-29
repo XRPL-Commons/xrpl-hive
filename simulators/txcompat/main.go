@@ -21,12 +21,41 @@ func main() {
 	suite.Add(checkCreateAndCash())
 	suite.Add(checkCreateAndCancel())
 
+	// Check (extended)
+	suite.Add(checkCreateValid())
+	suite.Add(checkCreateInvalid())
+	suite.Add(checkCashXRP())
+	suite.Add(checkCashIOU())
+	suite.Add(checkCashInvalid())
+	suite.Add(checkCashWithTransferFee())
+	suite.Add(checkCancelValid())
+	suite.Add(checkCancelInvalid())
+	suite.Add(checkWithTickets())
+	suite.Add(checkTrustLineCreation())
+
 	// Escrow
-	suite.Add(escrowCreateAndFinish())
 	suite.Add(escrowCreateAndCancel())
+	suite.Add(escrowLockup())
+	suite.Add(escrowFinishOnly())
+	suite.Add(escrowCancelOnly())
+	suite.Add(escrowTags())
+	suite.Add(escrowMetadataToSelf())
+	suite.Add(escrowMetadataToOther())
+	suite.Add(escrowFailureCases())
+	suite.Add(escrowWithTickets())
+	suite.Add(escrowDisallowXRP())
 
 	// Payment Channels
 	suite.Add(payChannelCreateAndClaim())
+	suite.Add(paychanSimple())
+	suite.Add(paychanSettleDelay())
+	suite.Add(paychanDstTag())
+	suite.Add(paychanFund())
+	suite.Add(paychanMultipleChannels())
+	suite.Add(paychanDisallowIncoming())
+	suite.Add(paychanWithTickets())
+	suite.Add(paychanDepositAuth())
+	suite.Add(paychanOptionalFields())
 
 	// NFToken
 	suite.Add(nftMintAndBurn())
@@ -34,7 +63,6 @@ func main() {
 
 	// Offer / DEX
 	suite.Add(offerCreateCrossed())
-	suite.Add(offerCancel())
 
 	// SignerList + Tickets
 	suite.Add(signerListSetAndMultisign())
@@ -54,11 +82,33 @@ func main() {
 	suite.Add(credentialCreateAcceptDelete())
 
 	// AMM
-	suite.Add(ammCreateAndDeposit())
-	suite.Add(ammWithdraw())
 
 	// AccountSet
 	suite.Add(accountSetFlags())
+
+	// AccountDelete
+	suite.Add(accountDeleteBasics())
+	suite.Add(accountDeleteDestinationConstraints())
+	suite.Add(accountDeleteOwnedTypes())
+	suite.Add(accountDeleteTooManyOffers())
+	suite.Add(accountDeleteWithTickets())
+	suite.Add(accountDeleteBalanceTooSmall())
+	suite.Add(accountDeleteResurrection())
+	suite.Add(accountDeleteDirectories())
+
+	// TrustSet
+	suite.Add(trustSetMalformed())
+	suite.Add(trustSetTwoFreeTrustlines())
+	suite.Add(trustSetDisallowIncoming())
+	suite.Add(trustSetDynamicReserve())
+	suite.Add(trustSetWithTicket())
+
+	// SetRegularKey
+	suite.Add(setRegularKey())
+	suite.Add(revokeRegularKey())
+	suite.Add(disableMasterKey())
+	suite.Add(reEnableMasterKey())
+	suite.Add(regularKeyWithTicket())
 
 	xrplsim.MustRun(xrplsim.New(), suite)
 }

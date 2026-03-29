@@ -19,6 +19,7 @@ func startNetwork(t *xrplsim.T) (*xrplsim.Client, *xrplsim.RPCClient) {
 		"XRPL_NETWORK_ID":   "10000",
 		"XRPL_LOGLEVEL":     "3",
 		"XRPL_PEER_PRIVATE": "1",
+		"XRPL_FEATURES":     "all",
 	})
 	rpc := xrplsim.NewRPCClient(c.RPCEndpoint())
 

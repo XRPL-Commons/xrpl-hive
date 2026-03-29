@@ -17,12 +17,10 @@ func escrowCreateAndFinish() xrplsim.TestSpec {
 			src := accounts[0]
 			dest := accounts[1]
 
-			// Ripple epoch is 2000-01-01T00:00:00Z (946684800 Unix).
-			rippleEpochOffset := int64(946684800)
-			// FinishAfter = now - 60s (already passed).
-			finishAfter := time.Now().Unix() - rippleEpochOffset - 60
+			// FinishAfter 10s in the future (must not already be past at creation time).
+			finishAfter := rippleEpoch(30)
 			// CancelAfter far in the future.
-			cancelAfter := time.Now().Unix() - rippleEpochOffset + 86400
+			cancelAfter := rippleEpoch(86400)
 
 			result, err := rpc.Submit(src.Secret, src.Address, map[string]interface{}{
 				"TransactionType": "EscrowCreate",
@@ -35,7 +33,11 @@ func escrowCreateAndFinish() xrplsim.TestSpec {
 				t.Fatal("escrow create:", err)
 			}
 			assertEngineResult(t, result, "tesSUCCESS")
-			waitSettled(rpc)
+			// Wait for FinishAfter to pass.
+			time.Sleep(32 * time.Second)
+			for i := 0; i < 5; i++ {
+				rpc.Call("ledger_accept", nil)
+			}
 
 			// Find escrow sequence from account_objects.
 			raw, err := rpc.Call("account_objects", map[string]interface{}{
