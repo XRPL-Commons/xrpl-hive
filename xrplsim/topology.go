@@ -1,8 +1,10 @@
 package xrplsim
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -110,7 +112,13 @@ func (t *Topology) EnvForNode(index int, peerAddrs []string) Params {
 
 // WithValidatorConfig returns a StartOption that configures a node as a
 // validator using the topology. It sets the appropriate environment
-// variables for the node at nodeIndex, with the given peer addresses.
+// variables for the node at nodeIndex, uploads the validators.json UNL
+// file, and connects to the given peer addresses.
 func WithValidatorConfig(topo *Topology, nodeIndex int, peerAddrs []string) StartOption {
-	return topo.EnvForNode(nodeIndex, peerAddrs)
+	return Bundle(
+		topo.EnvForNode(nodeIndex, peerAddrs),
+		WithDynamicFile("/xrpl/validators.json", func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(topo.ValidatorsJSON())), nil
+		}),
+	)
 }
