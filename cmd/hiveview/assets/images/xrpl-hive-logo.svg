@@ -1,0 +1,9 @@
+<svg width="200" height="36" viewBox="0 0 200 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- XRP Ledger X Symbol -->
+  <g transform="translate(2, 1)">
+    <path d="M0 0 C0 0 12.5 15.5 15 18 C17.5 15.5 30 0 30 0" stroke="#141414" stroke-width="4.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0 34 C0 34 12.5 18.5 15 16 C17.5 18.5 30 34 30 34" stroke="#141414" stroke-width="4.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- "xrpl hive" text -->
+  <text x="42" y="25" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="400" letter-spacing="-0.3" fill="#141414">xrpl hive</text>
+</svg>

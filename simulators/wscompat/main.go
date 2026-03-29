@@ -87,7 +87,7 @@ func wsSubscribeLedger() xrplsim.TestSpec {
 		Name:        "ws_subscribe_ledger",
 		Description: "Subscribe to ledger stream and receive a ledger close event.",
 		Run: func(t *xrplsim.T) {
-			c, _ := startNetwork(t)
+			c, rpc := startNetwork(t)
 
 			ws, err := xrplsim.NewWSClient(c.WSEndpoint())
 			if err != nil {
@@ -98,6 +98,11 @@ func wsSubscribeLedger() xrplsim.TestSpec {
 			// Subscribe to ledger stream.
 			if err := ws.Subscribe([]string{"ledger"}); err != nil {
 				t.Fatal("subscribe:", err)
+			}
+
+			// In standalone mode, ledgers must be closed manually.
+			if _, err := rpc.Call("ledger_accept", nil); err != nil {
+				t.Fatal("ledger_accept:", err)
 			}
 
 			// Wait for a ledger close notification.

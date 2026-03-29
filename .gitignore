@@ -16,6 +16,3 @@ workspace/
 # OS
 .DS_Store
 Thumbs.db
-
-# Fixtures (symlinked for local testing)
-fixtures/

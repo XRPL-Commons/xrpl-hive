@@ -3,7 +3,7 @@ ARG tag=latest
 
 FROM golang:1.24-alpine AS builder
 
-ARG github=https://github.com/LeJamon/go-xrpl.git
+ARG github=https://github.com/LeJamon/goXRPLd.git
 ARG tag=main
 
 RUN apk add --no-cache git gcc musl-dev

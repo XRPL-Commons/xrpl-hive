@@ -1,4 +1,4 @@
-.PHONY: build test clean smoke full rpccompat rpccompat-stateful sync txcompat wscompat fixture-conformance
+.PHONY: build test clean smoke full rpccompat rpccompat-stateful sync txcompat wscompat
 
 build:
 	go build -o ./bin/xrpl-hive .
@@ -45,10 +45,6 @@ txcompat: build
 # Run WebSocket compatibility tests
 wscompat: build
 	./bin/xrpl-hive --sim wscompat --client rippled,goxrpl
-
-# Run fixture-based conformance tests (all xrpl-fixtures via RPC)
-fixture-conformance: build
-	./bin/xrpl-hive --sim fixture-conformance --client rippled --sim.timelimit 30m
 
 # Dev mode — start API only, no simulators
 dev: build

@@ -48,7 +48,7 @@ $(document).ready(function () {
 // showSuiteName displays the suite title.
 function showSuiteName(name) {
     $('#testsuite_name').text(name);
-    document.title = name + ' - hive';
+    document.title = name + ' - xrpl hive';
 }
 
 function showError(message) {

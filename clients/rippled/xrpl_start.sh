@@ -117,6 +117,22 @@ echo "=== validators ==="
 cat $VALIDATORS
 echo "==================="
 
+# Force-enable amendments in standalone mode.
+# XRPL_FEATURES can be "all" (enable every supported amendment) or a
+# comma-separated list of amendment names.
+if [ -n "$XRPL_FEATURES" ]; then
+    echo -e "\n[features]" >> $CONFIG
+    if [ "$XRPL_FEATURES" = "all" ]; then
+        # Use the pre-built amendment list extracted at Docker build time.
+        cat /etc/rippled/all_amendments.txt >> $CONFIG
+    else
+        IFS=',' read -ra FEATS <<< "$XRPL_FEATURES"
+        for feat in "${FEATS[@]}"; do
+            echo "$feat" >> $CONFIG
+        done
+    fi
+fi
+
 # Standalone mode: -a flag makes rippled work without peers.
 # In this mode, ledger_accept can be used to advance ledgers.
 if [ "${XRPL_STANDALONE:-0}" = "1" ]; then

@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" href="images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="lib/app.css">
   </head>
 
@@ -11,7 +14,10 @@
     <script src="lib/app-suite.js" type="module"></script>
     <main role="main">
       <div id="hive-header">
-        <a href="index.html"><img id="hive-logo" height="35" src="images/hive3.svg"></a>
+        <a href="index.html" style="display:flex;align-items:center;gap:0.6rem;text-decoration:none;">
+          <img id="hive-logo" height="35" src="images/xrpl-logo-dark.svg">
+          <span id="hive-title" style="font-size:1.2rem;font-weight:500;letter-spacing:-0.3px;color:var(--bs-body-color);">hive</span>
+        </a>
         <nav id="hive-static-nav">
           <span class="nav-item" id="hive-instance-info"></span>
           <a class="nav-item" href="https://github.com/ethereum/hive/blob/master/docs/overview.md#what-is-hive">What is Hive?</a>
@@ -46,6 +52,14 @@
 
         <table id="execresults" class="table table-bordered"></table>
       </div>
+
+      <footer id="hive-footer">
+        <span class="xrpl-badge">
+          <img id="footer-logo" height="16" src="images/xrpl-logo-dark.svg" alt="XRPL">
+          XRPL Hive
+        </span>
+        <span>Fork of <a href="https://github.com/ethereum/hive" target="_blank" rel="noopener">Ethereum Hive</a> &mdash; kudos to the Ethereum team for building the original testing framework</span>
+      </footer>
     </main>
   </body>
 </html>

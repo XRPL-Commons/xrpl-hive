@@ -61,6 +61,31 @@ func main() {
 	suite.Add(nftMintAndBurn())
 	suite.Add(nftCreateAndAcceptOffer())
 
+	// NFToken (extended)
+	suite.Add(nftMintInvalid())
+	suite.Add(nftMintTaxon())
+	suite.Add(nftMintURI())
+	suite.Add(nftMintFlagBurnable())
+	suite.Add(nftMintFlagOnlyXRP())
+	suite.Add(nftMintFlagTransferable())
+	suite.Add(nftMintTransferFee())
+	suite.Add(nftBurnInvalid())
+	suite.Add(nftCreateOfferInvalid())
+	suite.Add(nftCreateOfferDestination())
+	suite.Add(nftCancelOffers())
+	suite.Add(nftBrokeredSale())
+	suite.Add(nftBrokeredSaleToSelf())
+	suite.Add(nftWithTickets())
+	suite.Add(nftBuyAndSellOffers())
+
+	// NFToken Auth
+	suite.Add(nftAuthUnauthorizedBuyerCreateOffer())
+	suite.Add(nftAuthUnauthorizedBuyerAcceptSellOffer())
+	suite.Add(nftAuthSellerAcceptBuyFromUnauth())
+	suite.Add(nftAuthUnauthorizedSellerAcceptBuy())
+	suite.Add(nftAuthBrokeredWithUnauthorized())
+	suite.Add(nftAuthMinterTransferFee())
+
 	// Offer / DEX
 	suite.Add(offerCreateCrossed())
 
@@ -102,6 +127,28 @@ func main() {
 	suite.Add(trustSetDisallowIncoming())
 	suite.Add(trustSetDynamicReserve())
 	suite.Add(trustSetWithTicket())
+
+	// Flow (payment flow/routing)
+	suite.Add(flowDirectStep())
+	suite.Add(flowTransferRate())
+	suite.Add(flowSelfPayment())
+	suite.Add(flowLimitQuality())
+	suite.Add(flowLineQuality())
+	suite.Add(flowUnfundedOffer())
+	suite.Add(flowCircularXRP())
+	suite.Add(flowPaymentWithTicket())
+	suite.Add(flowCrossCurrencyPayment())
+	suite.Add(flowDeliverMin())
+
+	// Path finding
+	suite.Add(pathDirectNoIntermediary())
+	suite.Add(pathFindBasic())
+	suite.Add(pathPaymentAutoPathFind())
+	suite.Add(pathNoPath())
+	suite.Add(pathTrustAutoClear())
+	suite.Add(pathSourceCurrencyLimits())
+	suite.Add(pathHybridOfferPath())
+	suite.Add(pathQualitySetAndTest())
 
 	// SetRegularKey
 	suite.Add(setRegularKey())

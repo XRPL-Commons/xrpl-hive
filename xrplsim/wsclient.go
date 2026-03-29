@@ -79,7 +79,13 @@ func (c *WSClient) Call(command string, params map[string]interface{}) (json.Raw
 		}
 
 		if resp.ID == id {
-			return resp.Result, nil
+			// If the response has a result field, return it.
+			// Otherwise return the full response body (e.g. for error responses
+			// where rippled puts error/status at the top level with no result).
+			if resp.Result != nil {
+				return resp.Result, nil
+			}
+			return json.RawMessage(data), nil
 		}
 	}
 }

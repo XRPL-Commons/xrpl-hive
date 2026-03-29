@@ -104,7 +104,7 @@ function showLinkBack(suiteID, suiteName, testID) {
 }
 
 function showTitle(type, title) {
-    document.title = title + ' - hive';
+    document.title = title + ' - xrpl hive';
     if (type) {
         title = type + ' ' + title;
     }

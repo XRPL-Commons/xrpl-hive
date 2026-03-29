@@ -12,6 +12,11 @@ RUN rippled --version > /version.txt 2>&1 || echo "rippled-unknown" > /version.t
 # Create config and data directories.
 RUN mkdir -p /etc/rippled /var/lib/rippled/db /hive-bin
 
+# Copy the known amendment list for this version.
+# When updating to a new rippled version, regenerate this file from the
+# client's Amendments:DBG log output.
+ADD all_amendments.txt /etc/rippled/all_amendments.txt
+
 # Add entry script.
 ADD xrpl_start.sh /xrpl_start.sh
 RUN chmod +x /xrpl_start.sh

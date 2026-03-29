@@ -3,8 +3,36 @@
 @import "../extlib/responsive-2.4.0.bootstrap5.css";
 @import "../extlib/bootstrap-icons-1.11.3.css";
 
+/* XRPL Brand Colors (Brand Toolkit 2025) */
 :root {
-    --highlight-bg: #fffaea;
+    --xrpl-black: #141414;
+    --xrpl-white: #FFFFFF;
+    --xrpl-green: #21E46B;
+    --xrpl-green-dark1: #078139;
+    --xrpl-green-dark2: #0DAA3E;
+    --xrpl-green-light1: #70EE97;
+    --xrpl-green-light2: #EAFCF1;
+    --xrpl-lilac: #C0A7FF;
+    --xrpl-lilac-light2: #F2EDFF;
+    --xrpl-grey1: #F0F3F7;
+    --xrpl-grey2: #E6EAF0;
+    --xrpl-grey3: #CAD4DF;
+    --xrpl-grey4: #8A919A;
+    --xrpl-grey5: #72777E;
+    --highlight-bg: #EAFCF1;
+
+    --bs-primary: #21E46B;
+    --bs-primary-rgb: 33, 228, 107;
+    --bs-link-color: #078139;
+    --bs-link-hover-color: #0DAA3E;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+[data-bs-theme="dark"] {
+    --bs-primary: #21E46B;
+    --bs-primary-rgb: 33, 228, 107;
+    --bs-link-color: #70EE97;
+    --bs-link-hover-color: #21E46B;
 }
 
 main {
@@ -12,11 +40,12 @@ main {
     font-size: 12pt;
     min-width: 340px;
     overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 #hive-header {
-    border-bottom: 1px solid var(--bs-border-color);
-    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid var(--xrpl-green, #21E46B);
+    padding: 0.75rem 1rem;
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
@@ -32,7 +61,7 @@ main {
 }
 
 [data-bs-theme="dark"] #hive-logo {
-    filter: brightness(500%);
+    content: url('../images/xrpl-logo.svg');
 }
 
 #hive-logo:hover {
@@ -626,4 +655,38 @@ kbd {
     border-radius: 4px;
     box-shadow: 0 2px 0 var(--bs-border-color);
     margin: 0 0.2rem;
+}
+
+/* Footer */
+#hive-footer {
+    margin-top: 3rem;
+    padding: 1rem 1rem;
+    border-top: 2px solid var(--xrpl-green, #21E46B);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--bs-secondary);
+    border-radius: 8px 8px 0 0;
+    background: color-mix(in srgb, var(--bs-body-bg) 97%, var(--bs-primary));
+}
+
+#hive-footer a {
+    color: var(--bs-body-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+#hive-footer a:hover {
+    color: var(--xrpl-green, #21E46B);
+}
+
+#hive-footer .xrpl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+[data-bs-theme="dark"] #footer-logo {
+    content: url('../images/xrpl-logo.svg');
 }

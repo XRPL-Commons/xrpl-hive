@@ -64,12 +64,13 @@ func startNetwork(t *xrplsim.T) (*xrplsim.Client, *xrplsim.RPCClient) {
 		t.Fatal("no client types available")
 	}
 
-	// Start a single node in standalone mode.
+	// Start a single node in standalone mode with all amendments enabled.
 	c := t.StartClient(clients[0].Name, xrplsim.Params{
 		"XRPL_STANDALONE":   "1",
 		"XRPL_NETWORK_ID":   "10000",
 		"XRPL_LOGLEVEL":     "3",
 		"XRPL_PEER_PRIVATE": "1",
+		"XRPL_FEATURES":     "all",
 	})
 	rpc := xrplsim.NewRPCClient(c.RPCEndpoint())
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/xrpl-commons/xrpl-hive/xrplsim"
+	"github.com/xrpl-commons/xrpl-hive/xrplsim/setup"
 )
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 		Description: "Verify the client advances past ledger 3.",
 		Role:        "xrpl_validator",
 		Parameters: xrplsim.Params{
+			"XRPL_STANDALONE":   "1",
 			"XRPL_NETWORK_ID":   "10000",
 			"XRPL_PEER_PRIVATE": "1",
 		},
@@ -41,6 +43,12 @@ func main() {
 			rpc := xrplsim.NewRPCClient(c.RPCEndpoint())
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
+
+			// In standalone mode, ledgers must be closed manually.
+			if err := setup.WaitSettled(ctx, rpc, 4); err != nil {
+				t.Fatal("ledger_accept failed:", err)
+			}
+
 			if err := rpc.WaitForLedger(ctx, 3, 60*time.Second); err != nil {
 				t.Fatal("node did not advance to ledger 3:", err)
 			}
