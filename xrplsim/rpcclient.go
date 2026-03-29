@@ -182,15 +182,23 @@ func (c *RPCClient) Ledger(seq int) (*LedgerResult, error) {
 
 // AccountInfoResult holds relevant account_info fields.
 type AccountInfoResult struct {
-	Account  string `json:"account"`
-	Balance  string `json:"balance"`
-	Sequence int    `json:"sequence"`
+	Account    string `json:"account"`
+	Balance    string `json:"balance"`
+	Sequence   int    `json:"sequence"`
+	OwnerCount uint32 `json:"owner_count"`
+	Flags      uint32 `json:"flags"`
 }
 
 // AccountInfo fetches account info.
 func (c *RPCClient) AccountInfo(account string) (*AccountInfoResult, error) {
+	return c.AccountInfoLedger(account, "current")
+}
+
+// AccountInfoLedger fetches account info for a specific ledger index.
+func (c *RPCClient) AccountInfoLedger(account, ledgerIndex string) (*AccountInfoResult, error) {
 	raw, err := c.Call("account_info", map[string]interface{}{
-		"account": account,
+		"account":      account,
+		"ledger_index": ledgerIndex,
 	})
 	if err != nil {
 		return nil, err
@@ -198,9 +206,11 @@ func (c *RPCClient) AccountInfo(account string) (*AccountInfoResult, error) {
 
 	var wrapper struct {
 		AccountData struct {
-			Account  string `json:"Account"`
-			Balance  string `json:"Balance"`
-			Sequence int    `json:"Sequence"`
+			Account    string `json:"Account"`
+			Balance    string `json:"Balance"`
+			Sequence   int    `json:"Sequence"`
+			OwnerCount uint32 `json:"OwnerCount"`
+			Flags      uint32 `json:"Flags"`
 		} `json:"account_data"`
 		Status string `json:"status"`
 	}
@@ -213,9 +223,11 @@ func (c *RPCClient) AccountInfo(account string) (*AccountInfoResult, error) {
 	}
 
 	return &AccountInfoResult{
-		Account:  wrapper.AccountData.Account,
-		Balance:  wrapper.AccountData.Balance,
-		Sequence: wrapper.AccountData.Sequence,
+		Account:    wrapper.AccountData.Account,
+		Balance:    wrapper.AccountData.Balance,
+		Sequence:   wrapper.AccountData.Sequence,
+		OwnerCount: wrapper.AccountData.OwnerCount,
+		Flags:      wrapper.AccountData.Flags,
 	}, nil
 }
 
@@ -397,6 +409,54 @@ func (c *RPCClient) WaitForLedger(ctx context.Context, seq int, timeout time.Dur
 // the caller specifically needs validation (not just closure).
 func (c *RPCClient) WaitForValidation(ctx context.Context, seq int, timeout time.Duration) error {
 	return c.WaitForLedger(ctx, seq, timeout)
+}
+
+// SubmitBlob submits a pre-signed transaction blob.
+func (c *RPCClient) SubmitBlob(txBlob string) (*SubmitResult, error) {
+	raw, err := c.Call("submit", map[string]interface{}{
+		"tx_blob": txBlob,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return parseSubmitResult(raw)
+}
+
+// WalletProposePassphrase generates a deterministic wallet from a passphrase.
+// This matches rippled's test account key derivation: sha512Half(name) → seed → keypair.
+func (c *RPCClient) WalletProposePassphrase(passphrase string) (*WalletProposeResult, error) {
+	raw, err := c.Call("wallet_propose", map[string]interface{}{
+		"passphrase": passphrase,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		AccountID  string `json:"account_id"`
+		MasterSeed string `json:"master_seed"`
+		PublicKey  string `json:"public_key"`
+		Status     string `json:"status"`
+	}
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("parse wallet_propose: %w", err)
+	}
+
+	return &WalletProposeResult{
+		AccountID:  result.AccountID,
+		MasterSeed: result.MasterSeed,
+		PublicKey:  result.PublicKey,
+	}, nil
+}
+
+// Feature enables or disables an amendment via the admin feature RPC.
+// In standalone mode, amendments take effect after the next ledger close.
+func (c *RPCClient) Feature(name string, vetoed bool) error {
+	_, err := c.Call("feature", map[string]interface{}{
+		"feature": name,
+		"vetoed":  vetoed,
+	})
+	return err
 }
 
 // parseSubmitResult extracts submit fields from the raw JSON-RPC response.
