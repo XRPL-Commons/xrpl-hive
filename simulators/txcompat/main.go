@@ -93,6 +93,18 @@ func main() {
 	suite.Add(signerListSetAndMultisign())
 	suite.Add(ticketCreateAndUse())
 
+	// MultiSign (extended)
+	suite.Add(multisignSignerListSet())
+	suite.Add(multisignPhantomSigners())
+	suite.Add(multisignFee())
+	suite.Add(multisignMisorderedSigners())
+	suite.Add(multisignRegularKey())
+	suite.Add(multisignNoMultisigners())
+	suite.Add(multisignQuorumNotMet())
+	suite.Add(multisignSignersWithTags())
+	suite.Add(multisignWithTickets())
+	suite.Add(multisignTransactionTypes())
+
 	// Oracle
 	suite.Add(oracleSetAndDelete())
 
@@ -100,11 +112,43 @@ func main() {
 	suite.Add(clawbackIOU())
 	suite.Add(clawbackWithoutFlag())
 
+	// Clawback (extended)
+	suite.Add(clawbackEnableFlag())
+	suite.Add(clawbackValidation())
+	suite.Add(clawbackAmountExceeds())
+	suite.Add(clawbackBidirectional())
+	suite.Add(clawbackMultiLine())
+	suite.Add(clawbackFrozenTrustline())
+	suite.Add(clawbackPermission())
+	suite.Add(clawbackWithTickets())
+
 	// DID
 	suite.Add(didSetAndDelete())
 
 	// Credential
 	suite.Add(credentialCreateAcceptDelete())
+
+	// Credential (extended)
+	suite.Add(credCreateForSubject())
+	suite.Add(credCreateForSelf())
+	suite.Add(credCreateInvalidFee())
+	suite.Add(credCreateNoSubject())
+	suite.Add(credCreateEmptyType())
+	suite.Add(credCreateSubjectNotExist())
+	suite.Add(credCreateInsufficientReserve())
+	suite.Add(credCreateDuplicate())
+	suite.Add(credAcceptNotExist())
+	suite.Add(credAcceptInvalidIssuer())
+	suite.Add(credAcceptAlreadyAccepted())
+	suite.Add(credAcceptInvalidFee())
+	suite.Add(credDeleteByIssuer())
+	suite.Add(credDeleteBySubject())
+	suite.Add(credDeleteByOther())
+	suite.Add(credDeleteNotExist())
+	suite.Add(credDeleteIssuerBeforeAccept())
+	suite.Add(credDeleteIssuerAfterAccept())
+	suite.Add(credDeleteSubjectBeforeAccept())
+	suite.Add(credDeleteSubjectAfterAccept())
 
 	// AMM
 	suite.Add(ammInstanceCreate())
@@ -202,6 +246,58 @@ func main() {
 	suite.Add(disableMasterKey())
 	suite.Add(reEnableMasterKey())
 	suite.Add(regularKeyWithTicket())
+
+	// DepositAuth
+	suite.Add(depositAuthEnable())
+	suite.Add(depositAuthPaymentXRP())
+	suite.Add(depositAuthPaymentIOU())
+	suite.Add(depositAuthSelfPayment())
+	suite.Add(depositAuthPreauth())
+	suite.Add(depositAuthNoRipple())
+	suite.Add(depositAuthInvalid())
+	suite.Add(depositAuthWithCredentials())
+
+	// Batch
+	suite.Add(batchEnabled())
+	suite.Add(batchIndependent())
+	suite.Add(batchAllOrNothing())
+	suite.Add(batchUntilFailure())
+	suite.Add(batchAccountActivation())
+	suite.Add(batchInvalidFee())
+	suite.Add(batchPreflight())
+	suite.Add(batchAccountSet())
+	suite.Add(batchWithTickets())
+	suite.Add(batchOnlyOne())
+
+	// Delegate
+	suite.Add(delegateSetValid())
+	suite.Add(delegateTransaction())
+	suite.Add(delegateNotEnabled())
+	suite.Add(delegateInvalidSet())
+	suite.Add(delegateFee())
+	suite.Add(delegateReserve())
+	suite.Add(delegatePaymentGranular())
+	suite.Add(delegateDeleteAccount())
+
+	// XChain Bridge
+	suite.Add(xchainCreateBridge())
+	suite.Add(xchainCreateBridgeConstraints())
+	suite.Add(xchainModifyBridge())
+	suite.Add(xchainCreateClaimID())
+	suite.Add(xchainCommit())
+	suite.Add(xchainClaim())
+	suite.Add(xchainBadAttestations())
+	suite.Add(xchainDeleteBridge())
+
+	// MPToken
+	suite.Add(mptCreateEnabled())
+	suite.Add(mptCreateValidate())
+	suite.Add(mptDestroyEnabled())
+	suite.Add(mptAuthorizeEnabled())
+	suite.Add(mptPayment())
+	suite.Add(mptClawback())
+	suite.Add(mptDepositPreauth())
+	suite.Add(mptSetTransaction())
 
 	xrplsim.MustRun(xrplsim.New(), suite)
 }
