@@ -12,6 +12,9 @@ import (
 func setupAMMPool(t *xrplsim.T, rpc *xrplsim.RPCClient) setup.Account {
 	ctx := context.Background()
 
+	// Enable DefaultRipple on genesis (USD issuer).
+	enableDefaultRippleOnGenesis(t, rpc)
+
 	accounts := mustFund(t, rpc, 1)
 	acct := accounts[0]
 
@@ -44,7 +47,8 @@ func setupAMMPool(t *xrplsim.T, rpc *xrplsim.RPCClient) setup.Account {
 			"issuer":   xrplsim.GenesisAddress,
 			"value":    "100",
 		},
-		"Amount2": "5000000000", // 5000 XRP
+		"Amount2":   "5000000000", // 5000 XRP
+		"TradingFee": 0,
 	})
 	if err != nil {
 		t.Fatal("amm create:", err)
@@ -74,7 +78,7 @@ func ammCreateAndDeposit() xrplsim.TestSpec {
 					"currency": "XRP",
 				},
 				"Amount2": "1000000000", // 1000 XRP
-				"Flags":   1048576,      // tfSingleAsset
+				"Flags":   524288,       // tfSingleAsset
 			})
 			if err != nil {
 				t.Fatal("amm deposit:", err)
@@ -127,8 +131,8 @@ func ammWithdraw() xrplsim.TestSpec {
 				"Asset2": map[string]interface{}{
 					"currency": "XRP",
 				},
-				"Amount2": "500000000", // withdraw 500 XRP
-				"Flags":   2097152,     // tfSingleAsset
+				"Amount": "500000000", // withdraw 500 XRP (single asset)
+				"Flags":  524288,      // tfSingleAsset
 			})
 			if err != nil {
 				t.Fatal("amm withdraw:", err)
