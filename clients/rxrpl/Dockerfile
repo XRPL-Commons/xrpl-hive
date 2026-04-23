@@ -2,7 +2,7 @@ ARG tag=latest
 
 FROM rust:1.85-bookworm AS builder
 
-ARG github=https://github.com/peerparty/rxrpl.git
+ARG github=https://github.com/RomThpt/rxrpl.git
 ARG tag=main
 
 RUN apt-get update && apt-get install -y git protobuf-compiler && rm -rf /var/lib/apt/lists/*
