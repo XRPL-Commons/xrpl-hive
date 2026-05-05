@@ -77,7 +77,7 @@ func main() {
 			rpc0 := xrplsim.NewRPCClient(nodes[0].RPCEndpoint())
 			rpc0.SubmitPayment(
 				xrplsim.GenesisSecret, xrplsim.GenesisAddress,
-				"rPMh7Pi9ct699iZUTWz6CFkakUy5JNb6FG", "50000000",
+				"rPMh7Pi9ct699iZUTWz6CFkakUy5Ju9f9v", "50000000",
 			)
 
 			// Wait for state to be committed.
@@ -107,7 +107,7 @@ func main() {
 			}
 
 			// Verify the late joiner has the account we created.
-			acct, err := lateRPC.AccountInfo("rPMh7Pi9ct699iZUTWz6CFkakUy5JNb6FG")
+			acct, err := lateRPC.AccountInfo("rPMh7Pi9ct699iZUTWz6CFkakUy5Ju9f9v")
 			if err != nil {
 				t.Fatal("late-join node doesn't have the account:", err)
 			}
