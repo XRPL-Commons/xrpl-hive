@@ -73,4 +73,11 @@ echo "=== rxrpl config ==="
 cat $CONFIG
 echo "==================="
 
-exec rxrpl --config $CONFIG --log_level $LEVEL
+# Standalone if no bootnodes (smoke test), network otherwise (multi-node sim).
+if [ -z "$XRPL_BOOTNODE" ]; then
+    MODE="standalone"
+else
+    MODE="network"
+fi
+
+exec rxrpl --config $CONFIG --log-level $LEVEL run --mode $MODE --bind "0.0.0.0:${XRPL_RPC_PORT:-5005}" --close-interval 3
