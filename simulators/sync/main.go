@@ -166,10 +166,22 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			t.Fatalf("late-join %s node did not sync to ledger %d: %v", lateClient, targetLedger, err)
 		}
 
-		// Verify the late joiner has the account we created.
-		acct, err := lateRPC.AccountInfo("rPMh7Pi9ct699iZUTWz6CFkakUy5Ju9f9v")
-		if err != nil {
-			t.Fatal("late-join node doesn't have the account:", err)
+		// rippled returns `noNetwork` from account_info while server_state
+		// is "connected" (validations seen but state not yet replayed).
+		// Retry until rippled finishes catchup or we time out. rxrpl
+		// answers immediately so the loop exits on first try.
+		var acct *xrplsim.AccountInfoResult
+		var lastErr error
+		acctDeadline := time.Now().Add(120 * time.Second)
+		for time.Now().Before(acctDeadline) {
+			acct, lastErr = lateRPC.AccountInfo("rPMh7Pi9ct699iZUTWz6CFkakUy5Ju9f9v")
+			if lastErr == nil {
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+		if lastErr != nil {
+			t.Fatalf("late-join %s node didn't replay state for account in time: %v", lateClient, lastErr)
 		}
 		t.Logf("late-join %s synced from %s network — account balance: %s", lateClient, initialClient, acct.Balance)
 	}

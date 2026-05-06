@@ -1,13 +1,11 @@
-ARG baseimage=rippleci/rippled
-ARG tag=develop
+ARG baseimage=xrpllabsofficial/xrpld
+ARG tag=latest
 
 FROM --platform=linux/amd64 $baseimage:$tag
 
-# Recent rippled images run as non-root user 'xrpld'; switch back to root for setup.
-USER root
-
-# Install python3 for validators.json conversion (RHEL-based image).
-RUN dnf install -y python3 && dnf clean all || true
+# xrpllabsofficial image is Debian-based, runs as root, ships rippled
+# release binaries with proper amd64/arm64 support and no rippleci dev
+# noise. xrpl_start.sh uses pure shell, so we don't even need python3.
 
 # Write version.
 RUN rippled --version > /version.txt 2>&1 || echo "rippled-unknown" > /version.txt
