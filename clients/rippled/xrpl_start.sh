@@ -99,14 +99,10 @@ esac
 echo -e "\n[rpc_startup]\n{\"command\": \"log_level\", \"severity\": \"$SEVERITY\"}" >> $CONFIG
 
 # Convert uploaded validators.json -> validators.txt.
+# Uses pure shell (no python3 dependency) to parse the simple JSON array.
 if [ -f /xrpl/validators.json ]; then
     echo "[validators]" > $VALIDATORS
-    python3 -c "
-import json
-data = json.load(open('/xrpl/validators.json'))
-for v in data.get('validators', []):
-    print('    ' + v)
-" >> $VALIDATORS
+    tr ',' '\n' < /xrpl/validators.json | sed -n 's/.*"\(n[A-Za-z0-9]*\)".*/    \1/p' >> $VALIDATORS
 else
     echo "[validators]" > $VALIDATORS
 fi

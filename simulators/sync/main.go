@@ -65,7 +65,13 @@ func main() {
 func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 	return func(t *xrplsim.T) {
 		const numInitial = 2
-		topo := xrplsim.NewTopology(numInitial + 1) // +1 for the late joiner
+		// The trusted UNL contains only the initial validators. rippled
+		// applies the BFT 80% rule (quorum = ceil(0.8 * trusted_count)),
+		// so adding the late joiner here would force quorum=3 and the
+		// 2-node initial network would never validate. The late joiner
+		// is a pure observer/follower; it doesn't need to be trusted to
+		// catch up — only to receive validations from the trusted set.
+		topo := xrplsim.NewTopology(numInitial)
 
 		netName := fmt.Sprintf("sync-net-%s-%s", initialClient, lateClient)
 		if err := t.Sim.CreateNetwork(t.SuiteID, netName); err != nil {
@@ -74,6 +80,17 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 
 		quorum := fmt.Sprintf("%d", numInitial)
 
+		// peer_private=1 (the topology default) makes rippled reject any
+		// inbound connection that isn't in [ips_fixed], replying with a
+		// 503 redirect. The late joiner's IP isn't known to the initial
+		// nodes at boot time, so it would be rejected forever. Override
+		// to 0 for the sync suite — rxrpl ignores this flag entirely
+		// (rxrpl-only runs were already passing because of that).
+		commonParams := xrplsim.Params{
+			"XRPL_VALIDATION_QUORUM": quorum,
+			"XRPL_PEER_PRIVATE":      "0",
+		}
+
 		// Start homogeneous initial nodes.
 		var nodes []*xrplsim.Client
 		var peerAddrs []string
@@ -81,7 +98,7 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			c := t.StartClient(initialClient,
 				xrplsim.WithValidatorConfig(topo, i, peerAddrs),
 				xrplsim.WithInitialNetworks([]string{netName}),
-				xrplsim.Params{"XRPL_VALIDATION_QUORUM": quorum},
+				commonParams,
 			)
 			ip, _ := t.Sim.ContainerNetworkIP(t.SuiteID, netName, c.Container)
 			peerAddrs = append(peerAddrs, fmt.Sprintf("%s:%d", ip, xrplsim.DefaultPeerPort))
@@ -127,7 +144,7 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 		lateNode := t.StartClient(lateClient,
 			xrplsim.WithValidatorConfig(topo, numInitial, peerAddrs),
 			xrplsim.WithInitialNetworks([]string{netName}),
-			xrplsim.Params{"XRPL_VALIDATION_QUORUM": quorum},
+			commonParams,
 		)
 
 		// Connect late joiner to all existing nodes.

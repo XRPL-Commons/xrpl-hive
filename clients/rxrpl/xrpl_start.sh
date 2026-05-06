@@ -73,11 +73,21 @@ echo "=== rxrpl config ==="
 cat $CONFIG
 echo "==================="
 
-# Standalone if no bootnodes (smoke test), network otherwise (multi-node sim).
-if [ -z "$XRPL_BOOTNODE" ]; then
-    MODE="standalone"
-else
+# Standalone unless we're part of a multi-node network. The seed-anchor
+# (first node) has no bootnodes but still needs P2P listening so peers
+# and late joiners can reach it; XRPL_VALIDATOR_SEED is the right signal.
+if [ -n "$XRPL_BOOTNODE" ] || [ -n "$XRPL_VALIDATOR_SEED" ]; then
     MODE="network"
+else
+    MODE="standalone"
 fi
 
-exec rxrpl --config $CONFIG --log-level $LEVEL run --mode $MODE --bind "0.0.0.0:${XRPL_RPC_PORT:-5005}" --close-interval 3
+# rxrpl serves HTTP JSON-RPC and WebSocket on the same port; xrpl-hive expects
+# WS on a separate port. Forward WS_PORT -> RPC_PORT in the background.
+RPC_PORT="${XRPL_RPC_PORT:-5005}"
+WS_PORT="${XRPL_WS_PORT:-6006}"
+if [ "$RPC_PORT" != "$WS_PORT" ]; then
+    (socat TCP-LISTEN:$WS_PORT,reuseaddr,fork TCP:127.0.0.1:$RPC_PORT &) 2>/dev/null
+fi
+
+exec rxrpl --config $CONFIG --log-level $LEVEL run --mode $MODE --bind "0.0.0.0:$RPC_PORT" --close-interval 3

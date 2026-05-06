@@ -90,7 +90,7 @@ func (t *Topology) EnvForNode(index int, peerAddrs []string) Params {
 	p := Params{
 		"XRPL_NETWORK_ID":   fmt.Sprintf("%d", t.NetworkID),
 		"XRPL_PEER_PRIVATE": "1",
-		"XRPL_LOGLEVEL":     "3",
+		"XRPL_LOGLEVEL":     "5",
 	}
 
 	if index >= 0 && index < len(t.Validators) {

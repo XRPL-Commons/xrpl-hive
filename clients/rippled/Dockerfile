@@ -3,6 +3,9 @@ ARG tag=develop
 
 FROM --platform=linux/amd64 $baseimage:$tag
 
+# Recent rippled images run as non-root user 'xrpld'; switch back to root for setup.
+USER root
+
 # Install python3 for validators.json conversion (RHEL-based image).
 RUN dnf install -y python3 && dnf clean all || true
 
