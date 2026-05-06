@@ -134,10 +134,15 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			"rPMh7Pi9ct699iZUTWz6CFkakUy5Ju9f9v", "50000000",
 		)
 
-		// Wait for state to be committed.
-		for _, node := range nodes {
+		// Wait for state to be committed. rippled paces ledgers slowly when
+		// idle (ledgerIDLE_INTERVAL=15s) so allow enough time for ~5 closes
+		// after the payment was submitted.
+		const targetLedger = 15
+		for i, node := range nodes {
 			rpc := xrplsim.NewRPCClient(node.RPCEndpoint())
-			rpc.WaitForLedger(ctx, 15, 60*time.Second)
+			if err := rpc.WaitForLedger(ctx, targetLedger, 180*time.Second); err != nil {
+				t.Fatalf("initial node %d did not commit payment by ledger %d: %v", i, targetLedger, err)
+			}
 		}
 
 		// Start the late-joining node.
@@ -154,9 +159,11 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			lateRPC.Connect(peerIP, xrplsim.DefaultPeerPort)
 		}
 
-		// Wait for late joiner to sync.
-		if err := lateRPC.WaitForLedger(ctx, 10, 180*time.Second); err != nil {
-			t.Fatalf("late-join %s node did not sync to ledger 10: %v", lateClient, err)
+		// Wait for late joiner to sync past the ledger that contains the
+		// payment. Using the same target the initial network reached
+		// guarantees AccountInfo can see the funded account.
+		if err := lateRPC.WaitForLedger(ctx, targetLedger, 240*time.Second); err != nil {
+			t.Fatalf("late-join %s node did not sync to ledger %d: %v", lateClient, targetLedger, err)
 		}
 
 		// Verify the late joiner has the account we created.
