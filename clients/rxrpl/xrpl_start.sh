@@ -33,6 +33,22 @@ if [ -n "$XRPL_VALIDATOR_SEED" ]; then
     echo "node_seed = \"$XRPL_VALIDATOR_SEED\"" >> $CONFIG
 fi
 
+# Validator identity. Without a [validator_identity], rxrpl runs as a
+# non-validator: it cannot count itself toward UNL quorum, so a mixed
+# network never reaches quorum and every consensus round force-accepts
+# at max_consensus_rounds (~20-38s/ledger). Provisioning the identity
+# (as xrpl-confluence does) makes rxrpl a real UNL validator that closes
+# in lockstep with rippled (~4s/ledger). Reuse the validator seed for
+# both the master and ephemeral key in this test harness.
+if [ -n "$XRPL_VALIDATOR_SEED" ]; then
+    cat >> $CONFIG <<CFGEOF
+
+[validator_identity]
+master_secret = "$XRPL_VALIDATOR_SEED"
+ephemeral_seed = "$XRPL_VALIDATOR_SEED"
+CFGEOF
+fi
+
 cat >> $CONFIG <<CFGEOF
 
 [database]
