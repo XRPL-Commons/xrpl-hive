@@ -57,6 +57,16 @@ $VALIDATORS
 
 [ledger_history]
 ${XRPL_LEDGER_HISTORY:-256}
+
+# Empty publisher sections so rippled does NOT fetch the mainnet UNL
+# (vl.ripple.com / vl.xrplf.org). Without these, rippled in a private
+# test network ends up tracking mainnet validators in its untrusted
+# set — which floods the consensus log with `is_trusted: 0`
+# validations and slows down close cadence on a small test network.
+[validator_list_sites]
+
+[validator_list_keys]
+
 CFGEOF
 
 # Validator seed.

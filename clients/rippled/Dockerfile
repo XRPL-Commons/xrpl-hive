@@ -1,5 +1,5 @@
-ARG baseimage=rippleci/rippled
-ARG tag=develop
+ARG baseimage=xrpllabsofficial/xrpld
+ARG tag=latest
 
 FROM --platform=linux/amd64 $baseimage:$tag
 
