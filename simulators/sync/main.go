@@ -65,7 +65,13 @@ func main() {
 func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 	return func(t *xrplsim.T) {
 		const numInitial = 2
-		topo := xrplsim.NewTopology(numInitial + 1) // +1 for the late joiner
+		// The trusted UNL contains only the initial validators. rippled
+		// applies the BFT 80% rule (quorum = ceil(0.8 * trusted_count)),
+		// so adding the late joiner here would force quorum=3 and the
+		// 2-node initial network would never validate. The late joiner
+		// is a pure observer/follower; it doesn't need to be trusted to
+		// catch up — only to receive validations from the trusted set.
+		topo := xrplsim.NewTopology(numInitial)
 
 		netName := fmt.Sprintf("sync-net-%s-%s", initialClient, lateClient)
 		if err := t.Sim.CreateNetwork(t.SuiteID, netName); err != nil {
@@ -74,6 +80,17 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 
 		quorum := fmt.Sprintf("%d", numInitial)
 
+		// peer_private=1 (the topology default) makes rippled reject any
+		// inbound connection that isn't in [ips_fixed], replying with a
+		// 503 redirect. The late joiner's IP isn't known to the initial
+		// nodes at boot time, so it would be rejected forever. Override
+		// to 0 for the sync suite — rxrpl ignores this flag entirely
+		// (rxrpl-only runs were already passing because of that).
+		commonParams := xrplsim.Params{
+			"XRPL_VALIDATION_QUORUM": quorum,
+			"XRPL_PEER_PRIVATE":      "0",
+		}
+
 		// Start homogeneous initial nodes.
 		var nodes []*xrplsim.Client
 		var peerAddrs []string
@@ -81,7 +98,7 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			c := t.StartClient(initialClient,
 				xrplsim.WithValidatorConfig(topo, i, peerAddrs),
 				xrplsim.WithInitialNetworks([]string{netName}),
-				xrplsim.Params{"XRPL_VALIDATION_QUORUM": quorum},
+				commonParams,
 			)
 			ip, _ := t.Sim.ContainerNetworkIP(t.SuiteID, netName, c.Container)
 			peerAddrs = append(peerAddrs, fmt.Sprintf("%s:%d", ip, xrplsim.DefaultPeerPort))
@@ -117,17 +134,22 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			"rPMh7Pi9ct699iZUTWz6CFkakUy5Ju9f9v", "50000000",
 		)
 
-		// Wait for state to be committed.
-		for _, node := range nodes {
+		// Wait for state to be committed. rippled paces ledgers slowly when
+		// idle (ledgerIDLE_INTERVAL=15s) so allow enough time for ~5 closes
+		// after the payment was submitted.
+		const targetLedger = 15
+		for i, node := range nodes {
 			rpc := xrplsim.NewRPCClient(node.RPCEndpoint())
-			rpc.WaitForLedger(ctx, 15, 60*time.Second)
+			if err := rpc.WaitForLedger(ctx, targetLedger, 180*time.Second); err != nil {
+				t.Fatalf("initial node %d did not commit payment by ledger %d: %v", i, targetLedger, err)
+			}
 		}
 
 		// Start the late-joining node.
 		lateNode := t.StartClient(lateClient,
 			xrplsim.WithValidatorConfig(topo, numInitial, peerAddrs),
 			xrplsim.WithInitialNetworks([]string{netName}),
-			xrplsim.Params{"XRPL_VALIDATION_QUORUM": quorum},
+			commonParams,
 		)
 
 		// Connect late joiner to all existing nodes.
@@ -137,9 +159,11 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			lateRPC.Connect(peerIP, xrplsim.DefaultPeerPort)
 		}
 
-		// Wait for late joiner to sync.
-		if err := lateRPC.WaitForLedger(ctx, 10, 180*time.Second); err != nil {
-			t.Fatalf("late-join %s node did not sync to ledger 10: %v", lateClient, err)
+		// Wait for late joiner to sync past the ledger that contains the
+		// payment. Using the same target the initial network reached
+		// guarantees AccountInfo can see the funded account.
+		if err := lateRPC.WaitForLedger(ctx, targetLedger, 240*time.Second); err != nil {
+			t.Fatalf("late-join %s node did not sync to ledger %d: %v", lateClient, targetLedger, err)
 		}
 
 		// Verify the late joiner has the account we created.
