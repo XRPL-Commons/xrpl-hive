@@ -3,10 +3,6 @@ ARG tag=latest
 
 FROM --platform=linux/amd64 $baseimage:$tag
 
-# xrpllabsofficial image is Debian-based, runs as root, ships rippled
-# release binaries with proper amd64/arm64 support and no rippleci dev
-# noise. xrpl_start.sh uses pure shell, so we don't even need python3.
-
 # Write version.
 RUN rippled --version > /version.txt 2>&1 || echo "rippled-unknown" > /version.txt
 
