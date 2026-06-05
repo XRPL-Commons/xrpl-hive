@@ -98,12 +98,12 @@ else
     MODE="standalone"
 fi
 
-# rxrpl serves HTTP JSON-RPC and WebSocket on the same port; xrpl-hive expects
-# WS on a separate port. Forward WS_PORT -> RPC_PORT in the background.
+# rxrpl serves the WebSocket API natively on a dedicated port (ws_bind,
+# default 0.0.0.0:6006) separately from the HTTP JSON-RPC port. The old
+# socat WS_PORT -> RPC_PORT forward assumed rxrpl multiplexed both on the
+# RPC port; with a real ws_bind it instead squats port 6006 and rxrpl
+# crashes with "Address already in use" when it tries to open its own WS
+# listener. No forward is needed — rxrpl listens on 6006 directly.
 RPC_PORT="${XRPL_RPC_PORT:-5005}"
-WS_PORT="${XRPL_WS_PORT:-6006}"
-if [ "$RPC_PORT" != "$WS_PORT" ]; then
-    (socat TCP-LISTEN:$WS_PORT,reuseaddr,fork TCP:127.0.0.1:$RPC_PORT &) 2>/dev/null
-fi
 
 exec rxrpl --config $CONFIG --log-level $LEVEL run --mode $MODE --bind "0.0.0.0:$RPC_PORT" --close-interval 3

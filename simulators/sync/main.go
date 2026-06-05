@@ -117,11 +117,16 @@ func makeLateJoinTest(initialClient, lateClient string) func(t *xrplsim.T) {
 			}
 		}
 
-		// Wait for the network to advance.
+		// Wait for the network to advance. An idle 2-validator rxrpl network
+		// paces at ~30s/ledger plus a ~60s bootstrap before the first
+		// non-genesis close, so reaching ledger 10 takes ~340s. The previous
+		// 300s budget timed out at seq ~9. 600s absorbs that with margin and
+		// does not change rippled-only behaviour (rippled reaches 10 in well
+		// under a minute).
 		ctx := context.Background()
 		for i, node := range nodes {
 			rpc := xrplsim.NewRPCClient(node.RPCEndpoint())
-			if err := rpc.WaitForLedger(ctx, 10, 300*time.Second); err != nil {
+			if err := rpc.WaitForLedger(ctx, 10, 600*time.Second); err != nil {
 				t.Fatalf("initial node %d did not reach ledger 10: %v", i, err)
 			}
 		}
