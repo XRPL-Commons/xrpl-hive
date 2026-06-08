@@ -41,6 +41,12 @@ func main() {
 				c := t.StartClient(cd.Name,
 					xrplsim.WithValidatorConfig(topo, i, peerAddrs),
 					xrplsim.WithInitialNetworks([]string{"testnet"}),
+					// peer_private=1 (the client default) makes rippled drop
+					// transactions relayed by non-cluster peers, so a payment
+					// submitted to the rxrpl node never reaches rippled and the
+					// propagation check times out. Same fix sync (#14) and soak
+					// (#15) apply.
+					xrplsim.Params{"XRPL_PEER_PRIVATE": "0"},
 				)
 				ip, err := t.Sim.ContainerNetworkIP(t.SuiteID, "testnet", c.Container)
 				if err != nil {
@@ -68,7 +74,10 @@ func main() {
 			ctx := context.Background()
 			for i, node := range nodes {
 				rpc := xrplsim.NewRPCClient(node.RPCEndpoint())
-				if err := rpc.WaitForLedger(ctx, 5, 120*time.Second); err != nil {
+				// rxrpl idle pace is ~30s/ledger + ~60s bootstrap, so even
+				// ledger 5 can take ~210s. 120s timed out before warmup
+				// finished. 600s scopes to "genuinely stuck".
+				if err := rpc.WaitForLedger(ctx, 5, 600*time.Second); err != nil {
 					t.Fatalf("node %s did not reach ledger 5: %v", clients[i].Name, err)
 				}
 			}
@@ -88,7 +97,10 @@ func main() {
 
 			// Wait for propagation.
 			rpc1 := xrplsim.NewRPCClient(nodes[1].RPCEndpoint())
-			if err := rpc1.WaitForLedger(ctx, 8, 60*time.Second); err != nil {
+			// The payment lands a few ledgers after submit; at ~30s/ledger
+			// reaching seq 8 from seq 5 is ~90s+. 60s was too tight. 300s
+			// gives the relayed tx time to propagate and a ledger to close.
+			if err := rpc1.WaitForLedger(ctx, 8, 300*time.Second); err != nil {
 				t.Fatalf("node %s did not advance: %v", clients[1].Name, err)
 			}
 

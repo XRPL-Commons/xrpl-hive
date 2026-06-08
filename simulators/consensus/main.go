@@ -40,6 +40,12 @@ func main() {
 				c := t.StartClient(cd.Name,
 					xrplsim.WithValidatorConfig(topo, i, peerAddrs),
 					xrplsim.WithInitialNetworks([]string{"consensus-net"}),
+					// peer_private=1 (the client default) makes rippled drop
+					// transactions relayed by non-cluster peers, so a mixed
+					// rxrpl+rippled network never converges on tx-bearing
+					// ledgers. Same fix the sync (#14) and soak (#15) suites
+					// apply.
+					xrplsim.Params{"XRPL_PEER_PRIVATE": "0"},
 				)
 				ip, _ := t.Sim.ContainerNetworkIP(t.SuiteID, "consensus-net", c.Container)
 				peerAddrs = append(peerAddrs, fmt.Sprintf("%s:%d", ip, xrplsim.DefaultPeerPort))
@@ -63,7 +69,12 @@ func main() {
 			targetSeq := 10
 			for i, node := range nodes {
 				rpc := xrplsim.NewRPCClient(node.RPCEndpoint())
-				if err := rpc.WaitForLedger(ctx, targetSeq, 120*time.Second); err != nil {
+				// An idle 2-validator rxrpl network paces at ~30s/ledger plus
+				// a ~60s bootstrap, so reaching ledger 10 takes ~340s. 120s
+				// timed out at seq ~5. 600s scopes this to "consensus stuck"
+				// rather than "still warming up". rippled-only runs are
+				// unaffected (they reach 10 in well under a minute).
+				if err := rpc.WaitForLedger(ctx, targetSeq, 600*time.Second); err != nil {
 					t.Fatalf("node %s did not reach ledger %d: %v", clients[i].Name, targetSeq, err)
 				}
 			}
