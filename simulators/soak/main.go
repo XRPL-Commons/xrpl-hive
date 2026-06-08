@@ -38,6 +38,16 @@ func main() {
 				c := t.StartClient(cd.Name,
 					xrplsim.WithValidatorConfig(topo, i, peerAddrs),
 					xrplsim.WithInitialNetworks([]string{"soak-net"}),
+					// peer_private=1 (the topology/client default) makes
+					// rippled drop transactions relayed by peers it does not
+					// treat as cluster members: it keeps validating ledgers
+					// but every one is empty (anyTransactions=0), so the
+					// payments submitted to the rxrpl node never reach the
+					// rippled node and the oracle sees rippled stuck on empty
+					// ledgers while rxrpl advances. Disabling it lets rippled
+					// accept and apply the relayed traffic. Same fix the sync
+					// suite already applies.
+					xrplsim.Params{"XRPL_PEER_PRIVATE": "0"},
 				)
 				ip, _ := t.Sim.ContainerNetworkIP(t.SuiteID, "soak-net", c.Container)
 				peerAddrs = append(peerAddrs, fmt.Sprintf("%s:%d", ip, xrplsim.DefaultPeerPort))
@@ -131,10 +141,37 @@ func main() {
 					t.Logf("oracle check at ledger %d failed: %v", seq, err)
 					continue
 				}
+				// A node that returns no ledger for this seq (pruned via
+				// online_delete, or never stored it because it booted/synced
+				// at a higher seq) yields Errors but no Divergences. That is
+				// an availability gap, NOT a consensus fork — skip it. Only a
+				// non-empty Divergences (two nodes reporting different
+				// ledger_hash for a seq they both served) is a real fork.
+				if !comp.Agreed && len(comp.Divergences) == 0 {
+					t.Logf("ledger %d: availability gap, not a fork (errors: %v)", seq, comp.Errors)
+					continue
+				}
 				if !comp.Agreed {
 					t.Logf("DIVERGENCE at ledger %d:", seq)
 					for _, d := range comp.Divergences {
 						t.Log("  ", d)
+					}
+					// Component-level breakdown: fetch each node's
+					// account_hash (state SHAMap root) and transaction_hash
+					// (tx SHAMap root) so we can tell WHICH part forked.
+					// If account_hash differs -> state/metadata diverged.
+					// If transaction_hash differs -> tx-set diverged.
+					// If both match but ledger_hash differs -> header
+					// (close_time / close_flags) diverged.
+					for i, on := range oracleNodes {
+						l, err := on.Client.Ledger(seq)
+						if err != nil {
+							t.Logf("  [%s] ledger %d fetch failed: %v", on.Name, seq, err)
+							continue
+						}
+						t.Logf("  [%s] ledger=%s account=%s tx=%s",
+							on.Name, l.LedgerHash, l.AccountHash, l.TransactionHash)
+						_ = i
 					}
 					t.Fatal("nodes disagree on ledger hash")
 				}
