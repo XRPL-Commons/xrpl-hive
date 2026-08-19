@@ -28,4 +28,6 @@ RUN chmod +x /xrpl_start.sh
 
 EXPOSE 5005 6006 51235
 
+USER nobody
+
 ENTRYPOINT ["/xrpl_start.sh"]

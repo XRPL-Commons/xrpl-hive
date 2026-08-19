@@ -18,4 +18,5 @@ RUN go build -o /bin/hiveproxy ./tool
 FROM alpine:latest
 COPY --from=builder /bin/hiveproxy .
 EXPOSE 8081/tcp
+USER nobody
 ENTRYPOINT ./hiveproxy --addr :8081
