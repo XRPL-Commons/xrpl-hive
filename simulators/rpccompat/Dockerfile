@@ -20,4 +20,6 @@ RUN apk add --no-cache ca-certificates
 COPY --from=builder /simulator /simulator
 COPY simulators/rpccompat/tests/ /tests/
 
+USER nobody
+
 ENTRYPOINT ["/simulator"]

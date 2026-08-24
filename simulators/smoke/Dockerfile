@@ -22,4 +22,5 @@ RUN go build -o /simulator ./simulators/smoke
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /simulator /simulator
+USER nobody
 ENTRYPOINT ["/simulator"]
