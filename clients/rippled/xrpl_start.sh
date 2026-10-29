@@ -86,6 +86,12 @@ if [ -n "$XRPL_BOOTNODE" ]; then
     for peer in "${PEERS[@]}"; do
         echo "${peer//:/ }" >> $CONFIG
     done
+elif [ "${XRPL_STANDALONE:-0}" != "1" ]; then
+    # With [ips] and [ips_fixed] both empty, rippled bootstraps from the
+    # public mainnet hubs; with peer_private=0 it then joins mainnet and
+    # follows its ledgers. Bootstrap from our own port instead (dropped as
+    # a self-connection) so the node only meets the test network's peers.
+    echo -e "\n[ips]\n127.0.0.1 ${XRPL_PEER_PORT:-51235}" >> $CONFIG
 fi
 
 # Peer private mode.

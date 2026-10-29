@@ -40,7 +40,15 @@ else
     echo 'ips_fixed = []' >> $CONFIG
 fi
 
-echo 'ips = []' >> $CONFIG
+# With ips and ips_fixed both empty, goXRPL bootstraps from the public
+# mainnet hubs like rippled; with peer_private=0 it then joins mainnet and
+# follows its ledgers. Bootstrap from our own port instead (dropped as a
+# self-connection) so the node only meets the test network's peers.
+if [ -z "$XRPL_BOOTNODE" ] && [ "${XRPL_STANDALONE:-0}" != "1" ]; then
+    echo "ips = [\"127.0.0.1 ${XRPL_PEER_PORT:-51235}\"]" >> $CONFIG
+else
+    echo 'ips = []' >> $CONFIG
+fi
 
 # XRPL_LOGLEVEL 0-5 (silent to trace) mapped onto goXRPL's levels; logs go to
 # stdout so hive captures them with the container output.
