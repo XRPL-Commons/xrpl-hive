@@ -17,6 +17,7 @@ func signForAndSubmitMultisigned(
 	signerAddress, signerSecret string,
 	txJSON map[string]interface{},
 ) string {
+	withNetworkID(txJSON)
 	signRaw, err := rpc.Call("sign_for", map[string]interface{}{
 		"account": signerAddress,
 		"secret":  signerSecret,
@@ -48,6 +49,14 @@ func signForAndSubmitMultisigned(
 	return submitResp.EngineResult
 }
 
+// withNetworkID sets the private network's NetworkID on a tx_json that does not
+// carry one: sign_for does not autofill it, and networks above ID 1024 require it.
+func withNetworkID(txJSON map[string]interface{}) {
+	if _, ok := txJSON["NetworkID"]; !ok {
+		txJSON["NetworkID"] = xrplsim.DefaultNetworkID
+	}
+}
+
 // multiSignForN signs a tx_json sequentially with N signers and returns the
 // final signed tx_json map ready for submit_multisigned.
 func multiSignForN(
@@ -56,6 +65,7 @@ func multiSignForN(
 	signers []setup.Account,
 	txJSON map[string]interface{},
 ) map[string]interface{} {
+	withNetworkID(txJSON)
 	// Accumulate all Signers arrays by signing one at a time and merging.
 	allSigners := []interface{}{}
 
