@@ -1,6 +1,5 @@
 AMM
 AMMClawback
-Batch
 CheckCashMakesTrustLine
 Checks
 Clawback
@@ -48,8 +47,6 @@ fixInnerObjTemplate
 fixInnerObjTemplate2
 fixInvalidTxFlags
 fixMasterKeyAsRegularKey
-fixNFTokenDirV1
-fixNFTokenNegOffer
 fixNFTokenPageLinks
 fixNFTokenRemint
 fixNFTokenReserve
@@ -77,7 +74,6 @@ MultiSign
 MultiSignReserve
 NegativeUNL
 NFTokenMintOffer
-NonFungibleTokensV1
 NonFungibleTokensV1_1
 PayChan
 PermissionedDEX
@@ -91,3 +87,18 @@ TokenEscrow
 TrustSetAuth
 XChainBridge
 XRPFees
+BatchV1_1
+ConfidentialTransfer
+DynamicMPT
+LendingProtocol
+PermissionDelegationV1_1
+SingleAssetVault
+Sponsor
+fixAMMClawbackRounding
+fixCleanup3_1_3
+fixCleanup3_2_0
+fixCleanup3_3_0
+fixIncludeKeyletFields
+fixMPTDeliveredAmount
+fixPriceOracleOrder
+fixTokenEscrowV1
