@@ -10,7 +10,11 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        client: [rippled, goxrpl]
     steps:
       - uses: actions/checkout@v4
 
@@ -22,18 +26,22 @@ jobs:
         run: make build
 
       - name: Run smoke tests
-        run: ./bin/xrpl-hive --sim smoke --client rippled
+        run: ./bin/xrpl-hive --sim smoke --client ${{ matrix.client }}
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-results
+          name: smoke-${{ matrix.client }}-results
           path: workspace/logs/
 
   rpccompat:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        client: [rippled, goxrpl]
     steps:
       - uses: actions/checkout@v4
 
@@ -45,18 +53,22 @@ jobs:
         run: make build
 
       - name: Run RPC compatibility tests
-        run: ./bin/xrpl-hive --sim rpccompat --client rippled
+        run: ./bin/xrpl-hive --sim rpccompat --client ${{ matrix.client }}
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rpccompat-results
+          name: rpccompat-${{ matrix.client }}-results
           path: workspace/logs/
 
   rpccompat-stateful:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        client: [rippled, goxrpl]
     steps:
       - uses: actions/checkout@v4
 
@@ -68,11 +80,11 @@ jobs:
         run: make build
 
       - name: Run stateful RPC tests
-        run: ./bin/xrpl-hive --sim rpccompat-stateful --client rippled
+        run: ./bin/xrpl-hive --sim rpccompat-stateful --client ${{ matrix.client }}
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rpccompat-stateful-results
+          name: rpccompat-stateful-${{ matrix.client }}-results
           path: workspace/logs/
