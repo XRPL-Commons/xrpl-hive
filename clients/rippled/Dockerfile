@@ -1,5 +1,5 @@
 ARG baseimage=xrpllabsofficial/xrpld
-ARG tag=latest
+ARG tag=3.3.0
 
 FROM --platform=linux/amd64 $baseimage:$tag
 

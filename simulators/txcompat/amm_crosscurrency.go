@@ -1408,6 +1408,7 @@ func ammExtMultisignAMM() xrplsim.TestSpec {
 				"account": signer.Address,
 				"secret":  signer.Secret,
 				"tx_json": map[string]interface{}{
+					"NetworkID":       xrplsim.DefaultNetworkID,
 					"TransactionType": "AMMDeposit",
 					"Account":         multiAcct.Address,
 					"Asset": map[string]interface{}{
@@ -1417,8 +1418,8 @@ func ammExtMultisignAMM() xrplsim.TestSpec {
 					"Asset2": map[string]interface{}{
 						"currency": "XRP",
 					},
-					"Amount2": "1000000000", // 1000 XRP
-					"Flags":   524288,       // tfSingleAsset
+					"Amount": "1000000000", // 1000 XRP
+					"Flags":  524288,       // tfSingleAsset
 					"Sequence": info.Sequence,
 					"Fee":      "20",
 				},
@@ -1449,6 +1450,9 @@ func ammExtMultisignAMM() xrplsim.TestSpec {
 				EngineResult string `json:"engine_result"`
 			}
 			json.Unmarshal(submitRaw, &submitResp)
+			if submitResp.EngineResult != "tesSUCCESS" {
+				t.Fatalf("multisigned AMMDeposit: %s", submitResp.EngineResult)
+			}
 			t.Logf("multisigned AMMDeposit: %s", submitResp.EngineResult)
 			waitSettled(rpc)
 

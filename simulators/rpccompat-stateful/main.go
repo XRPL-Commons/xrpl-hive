@@ -731,6 +731,7 @@ func signForMultisign() xrplsim.TestSpec {
 					"Amount":          "1000000",
 					"Sequence":        2,
 					"Fee":             "20",
+					"NetworkID":       xrplsim.DefaultNetworkID,
 				},
 			})
 			if err != nil {
@@ -746,7 +747,7 @@ func signForMultisign() xrplsim.TestSpec {
 			}
 			json.Unmarshal(raw, &resp)
 			if resp.TxBlob == "" {
-				t.Fatal("sign_for returned empty tx_blob")
+				t.Fatal("sign_for returned empty tx_blob:", string(raw))
 			}
 			t.Logf("sign_for produced tx_blob with %d signer(s)", len(resp.TxJSON.Signers))
 		},
@@ -786,6 +787,11 @@ func submitMultisigned() xrplsim.TestSpec {
 
 			dest, _ := rpc.WalletPropose()
 
+			info, err := rpc.AccountInfo(multiAcct.Address)
+			if err != nil {
+				t.Fatal("account_info:", err)
+			}
+
 			// sign_for from the signer.
 			signRaw, err := rpc.Call("sign_for", map[string]interface{}{
 				"account": signer.Address,
@@ -794,9 +800,10 @@ func submitMultisigned() xrplsim.TestSpec {
 					"TransactionType": "Payment",
 					"Account":         multiAcct.Address,
 					"Destination":     dest.AccountID,
-					"Amount":          "1000000",
-					"Sequence":        2,
+					"Amount":          "20000000",
+					"Sequence":        info.Sequence,
 					"Fee":             "20",
+					"NetworkID":       xrplsim.DefaultNetworkID,
 				},
 			})
 			if err != nil {
@@ -824,6 +831,9 @@ func submitMultisigned() xrplsim.TestSpec {
 				Status       string `json:"status"`
 			}
 			json.Unmarshal(submitRaw, &submitResp)
+			if submitResp.EngineResult != "tesSUCCESS" {
+				t.Fatalf("submit_multisigned: %s (%s)", submitResp.EngineResult, string(submitRaw))
+			}
 			t.Logf("submit_multisigned: %s", submitResp.EngineResult)
 		},
 	}

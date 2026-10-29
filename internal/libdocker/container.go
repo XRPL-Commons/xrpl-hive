@@ -174,14 +174,15 @@ func (b *ContainerBackend) StartContainer(ctx context.Context, containerID strin
 	}
 	info.IP = container.NetworkSettings.IPAddress
 	info.MAC = container.NetworkSettings.MacAddress
-	// On Docker Desktop (macOS/Windows), IPAddress may be empty.
-	// Fall back to the bridge network IP.
+	// Docker Engine 29 no longer reports the top-level IPAddress (and Docker
+	// Desktop may leave it empty). Fall back to the default bridge network
+	// the container was created on: a container started with initial
+	// networks is attached to those too, and picking one of them (map order
+	// is random) gives an address the proxy cannot reach.
 	if info.IP == "" {
-		for _, net := range container.NetworkSettings.Networks {
-			if net.IPAddress != "" {
-				info.IP = net.IPAddress
-				break
-			}
+		if net, ok := container.NetworkSettings.Networks["bridge"]; ok && net.IPAddress != "" {
+			info.IP = net.IPAddress
+			info.MAC = net.MacAddress
 		}
 	}
 
